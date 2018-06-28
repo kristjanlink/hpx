@@ -16,7 +16,7 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "hpx-${env}-srv-${AWS::Region}"
+                - "hpx-${env}-srv"
                 - { env: !Ref Environment }
             AccessControl: "Private"
 
@@ -38,36 +38,36 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "hpx-${env}-log-${AWS::Region}"
+                - "hpx-${env}-log"
                 - { env: !Ref Environment }
             AccessControl: "Private"
 
-    PixelServerCloudfrontDistribution:
-        Type: "AWS::CloudFront::Distribution"
-        Properties:
-            DistributionConfig:
-                Enabled: "true"
-                DefaultRootObject: index.html
-                PriceClass: "PriceClass_All"
-                DefaultCacheBehavior:
-                    TargetOriginId: !Ref PixelServerS3Bucket
-                    ViewerProtocolPolicy: "redirect-to-https"
-                    MinTTL: 0
-                    AllowedMethods:
-                        - "HEAD"
-                        - "GET"
-                    CachedMethods:
-                        - "HEAD"
-                        - "GET"
-                    ForwardedValues:
-                        QueryString: "false"
-                    Compress: "true"
-
-                Logging:
-                    Bucket: !GetAtt PixelLogS3Bucket.DomainName
-                Origins:
-                    -
-                        DomainName: !GetAtt PixelLogS3Bucket.DomainName
-                        Id: !Ref PixelLogS3Bucket
-                        S3OriginConfig:
-                            OriginAccessIdentity: !Ref PixelServerCloudFrontOriginAccessId
+#    PixelServerCloudfrontDistribution:
+#        Type: "AWS::CloudFront::Distribution"
+#        Properties:
+#            DistributionConfig:
+#                Enabled: "true"
+#                DefaultRootObject: index.html
+#                PriceClass: "PriceClass_All"
+#                DefaultCacheBehavior:
+#                    TargetOriginId: !Ref PixelServerS3Bucket
+#                    ViewerProtocolPolicy: "redirect-to-https"
+#                    MinTTL: 0
+#                    AllowedMethods:
+#                        - "HEAD"
+#                        - "GET"
+#                    CachedMethods:
+#                        - "HEAD"
+#                        - "GET"
+#                    ForwardedValues:
+#                        QueryString: "false"
+#                    Compress: "true"
+#
+#                Logging:
+#                    Bucket: !GetAtt PixelLogS3Bucket.DomainName
+#                Origins:
+#                    -
+#                        DomainName: !GetAtt PixelLogS3Bucket.DomainName
+#                        Id: !Ref PixelServerS3Bucket
+#                        S3OriginConfig:
+#                            OriginAccessIdentity: !Ref PixelServerCloudFrontOriginAccessId
