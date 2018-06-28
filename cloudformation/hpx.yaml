@@ -1,0 +1,73 @@
+Parameters:
+    Environment:
+        Type: String
+        Default: "dev"
+
+Resources:
+    PixelServerCloudFrontOriginAccessId:
+        Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+        Properties:
+              CloudFrontOriginAccessIdentityConfig:
+                  Comment: !Sub
+                      - "hpx-${env}-srv-${AWS::Region}"
+                      - { env: !Ref Environment }
+
+    PixelServerS3Bucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            BucketName: !Sub
+                - "hpx-${env}-srv-${AWS::Region}"
+                - { env: !Ref Environment }
+            AccessControl: "Private"
+
+    PixelServerS3BucketPolicy:
+        Type: "AWS::S3::BucketPolicy"
+        Properties:
+            Bucket: !Ref PixelServerS3Bucket
+            PolicyDocument:
+                Statement:
+                    -
+                        Action:
+                            - "s3:GetObject"
+                        Effect: "Allow"
+                        Resource: !Join ['', [!GetAtt PixelServerS3Bucket.Arn, "/*"]]
+                        Principal:
+                            CanonicalUser: !GetAtt PixelServerCloudFrontOriginAccessId.S3CanonicalUserId
+
+    PixelLogS3Bucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+            BucketName: !Sub
+                - "hpx-${env}-log-${AWS::Region}"
+                - { env: !Ref Environment }
+            AccessControl: "Private"
+
+    PixelServerCloudfrontDistribution:
+        Type: "AWS::CloudFront::Distribution"
+        Properties:
+            DistributionConfig:
+                Enabled: "true"
+                DefaultRootObject: index.html
+                PriceClass: "PriceClass_All"
+                DefaultCacheBehavior:
+                    TargetOriginId: !Ref PixelServerS3Bucket
+                    ViewerProtocolPolicy: "redirect-to-https"
+                    MinTTL: 0
+                    AllowedMethods:
+                        - "HEAD"
+                        - "GET"
+                    CachedMethods:
+                        - "HEAD"
+                        - "GET"
+                    ForwardedValues:
+                        QueryString: "false"
+                    Compress: "true"
+
+                Logging:
+                    Bucket: !GetAtt PixelLogS3Bucket.DomainName
+                Origins:
+                    -
+                        DomainName: !GetAtt PixelLogS3Bucket.DomainName
+                        Id: !Ref PixelLogS3Bucket
+                        S3OriginConfig:
+                            OriginAccessIdentity: !Ref PixelServerCloudFrontOriginAccessId
