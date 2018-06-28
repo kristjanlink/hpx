@@ -9,14 +9,14 @@ Resources:
         Properties:
               CloudFrontOriginAccessIdentityConfig:
                   Comment: !Sub
-                      - "hpx-${env}-srv-${AWS::Region}"
+                      - "hpx-${env}-srv"
                       - { env: !Ref Environment }
 
     PixelServerS3Bucket:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "hpx-${env}-srv"
+                - "hpx-${env}-srv-${AWS::Region}"
                 - { env: !Ref Environment }
             AccessControl: "Private"
 
@@ -38,7 +38,7 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "hpx-${env}-log"
+                - "hpx-${env}-log-${AWS::Region}"
                 - { env: !Ref Environment }
             AccessControl: "Private"
 
