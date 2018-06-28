@@ -1,3 +1,6 @@
 #!/bin/bash
-# ./create-change-set.sh <name of stack> <name of change set>
-aws cloudformation create-change-set --stack-name $1 --template-body file://hpx.yaml --change-set-name $1
+# ./create-change-set.sh <stack name>
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+LUSER=`whoami`
+
+aws cloudformation create-change-set --stack-name hpx-$BRANCH --template-url https://s3-us-west-2.amazonaws.com/hpx-code/$BRANCH/cloudformation/hpx.yaml --change-set-name hpx-manual-changeset-$LUSER
