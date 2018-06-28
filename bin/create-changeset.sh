@@ -12,6 +12,7 @@ echo "Creating changeset for stack hpx-$BRANCH"
 echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT"
 
 aws cloudformation create-change-set \
+  --capabilities CAPABILITY_NAMED_IAM \
   --stack-name hpx-$BRANCH \
   --template-url https://s3-us-west-2.amazonaws.com/hpx-code/$BRANCH/cloudformation/hpx.yaml \
   --change-set-name hpx-manual-changeset-$LUSER \

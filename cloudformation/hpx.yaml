@@ -90,37 +90,37 @@ Resources:
               Version: "2012-10-17"
               Statement:
                   -
-                  Effect: "Allow"
-                  Principal:
-                      Service:
-                          - "lambda.amazonaws.com",
-                          - "edgelambda.amazonaws.com"
-                  Action:
-                      - "sts:AssumeRole"
+                      Effect: "Allow"
+                      Principal:
+                          Service:
+                              - "lambda.amazonaws.com"
+                              - "edgelambda.amazonaws.com"
+                      Action:
+                          - "sts:AssumeRole"
         Policies:
           -
             PolicyName: !Sub
                 - "${prefix}-${env}-pixellog-lambda-policy"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
             PolicyDocument:
-                Version: "2012-10-17",
+                Version: "2012-10-17"
                 Statement:
                     -
                         Sid: !Sub
                             - "${prefix}-${env}-pixellog-lambda-policy"
                             - { env: !Ref Environment, prefix: !Ref Prefix }
-                        Effect: "Allow",
+                        Effect: "Allow"
                         Action:
-                            - "s3:PutObject",
-                            - "s3:GetObject",
-                            - "cloudfront:*",
-                            - "iam:CreateServiceLinkedRole",
-                            - "xray:PutTelemetryRecords",
-                            - "firehose:PutRecord",
-                            - "logs:*",
-                            - "lambda:*",
-                            - "firehose:PutRecordBatch",
-                            - "firehose:ListDeliveryStreams",
+                            - "s3:PutObject"
+                            - "s3:GetObject"
+                            - "cloudfront:*"
+                            - "iam:CreateServiceLinkedRole"
+                            - "xray:PutTelemetryRecords"
+                            - "firehose:PutRecord"
+                            - "logs:*"
+                            - "lambda:*"
+                            - "firehose:PutRecordBatch"
+                            - "firehose:ListDeliveryStreams"
                             - "xray:PutTraceSegments"
                         Resource: "*"
 
