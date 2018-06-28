@@ -1,6 +1,24 @@
 # hpx
 
-## Getting started (OSX)
+## Prerequisites
+- git
+- awscli (instructions below if you haven't done this yet.)
+
+## Updating HPX Using CloudFormation
+
+### Environments, Stacks and Changesets
+
+
+```${Environment}``` is set based on your current branch:
+If in master, the environment is set to "prod", otherwise the environment is set to your branch name.
+
+The *Environment* is used to identify which Stack should be updated as well as passed as a parameter to CloudFormation to uniquely name AWS resources within each Stack.
+
+
+
+
+
+## Appendix: Setting up the AWS Cli
 ### Get Python
 ```bash
 brew install python@3

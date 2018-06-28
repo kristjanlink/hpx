@@ -5,7 +5,7 @@ LUSER=`whoami`
 ENVIRONMENT="prod"
 
 if [ $BRANCH != "master" ]; then
-  ENVIRONMENT="dev"
+  ENVIRONMENT=$BRANCH
 fi
 
 echo "Creating changeset for stack hpx-$BRANCH"

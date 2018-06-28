@@ -2,6 +2,12 @@ Parameters:
     Environment:
         Type: String
         Default: "dev"
+    Prefix:
+        Type: String
+        Default: "hpx"
+    DistS3Bucket:
+        Type: String
+        Default: "s3://hpx-code"
 
 Resources:
     PixelServerCloudFrontOriginAccessId:
@@ -9,15 +15,15 @@ Resources:
         Properties:
               CloudFrontOriginAccessIdentityConfig:
                   Comment: !Sub
-                      - "hpx-${env}-srv"
-                      - { env: !Ref Environment }
+                      - "${prefix}-${env}-srv"
+                      - { env: !Ref Environment, prefix: !Ref Prefix }
 
     PixelServerS3Bucket:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "hpx-${env}-srv-${AWS::Region}"
-                - { env: !Ref Environment }
+                - "${prefix}-${env}-srv-${AWS::Region}"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
             AccessControl: "Private"
 
     PixelServerS3BucketPolicy:
@@ -34,12 +40,12 @@ Resources:
                         Principal:
                             CanonicalUser: !GetAtt PixelServerCloudFrontOriginAccessId.S3CanonicalUserId
 
-    PixelLogS3Bucket:
+    PixelLog3Bucket:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "hpx-${env}-log-${AWS::Region}"
-                - { env: !Ref Environment }
+                - "${prefix}-${env}-log-${AWS::Region}"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
             AccessControl: "Private"
 
     PixelServerCloudfrontDistribution:
@@ -64,7 +70,7 @@ Resources:
                     Compress: "true"
 
                 Logging:
-                    Bucket: !GetAtt PixelLogS3Bucket.DomainName
+                    Bucket: !GetAtt PixelLog3Bucket.DomainName
                 Origins:
                     -
                         DomainName: !GetAtt PixelServerS3Bucket.DomainName
@@ -73,3 +79,67 @@ Resources:
                             OriginAccessIdentity: !Sub
                                 - "origin-access-identity/cloudfront/${OriginAccessIdentity}"
                                 - { OriginAccessIdentity: !Ref PixelServerCloudFrontOriginAccessId }
+
+    PixelLogLambdaRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        RoleName: !Sub
+            - "${prefix}-${env}-pixellog-lambda-role"
+            - { env: !Ref Environment, prefix: !Ref Prefix }
+        AssumeRolePolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                  -
+                  Effect: "Allow"
+                  Principal:
+                      Service:
+                          - "lambda.amazonaws.com",
+                          - "edgelambda.amazonaws.com"
+                  Action:
+                      - "sts:AssumeRole"
+        Policies:
+          -
+            PolicyName: !Sub
+                - "${prefix}-${env}-pixellog-lambda-policy"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
+            PolicyDocument:
+                Version: "2012-10-17",
+                Statement:
+                    -
+                        Sid: !Sub
+                            - "${prefix}-${env}-pixellog-lambda-policy"
+                            - { env: !Ref Environment, prefix: !Ref Prefix }
+                        Effect: "Allow",
+                        Action:
+                            - "s3:PutObject",
+                            - "s3:GetObject",
+                            - "cloudfront:*",
+                            - "iam:CreateServiceLinkedRole",
+                            - "xray:PutTelemetryRecords",
+                            - "firehose:PutRecord",
+                            - "logs:*",
+                            - "lambda:*",
+                            - "firehose:PutRecordBatch",
+                            - "firehose:ListDeliveryStreams",
+                            - "xray:PutTraceSegments"
+                        Resource: "*"
+
+    PixelLogLambda:
+      Type: "AWS::Lambda::Function"
+      Properties:
+          Code:
+              S3Bucket: !Ref DistS3Bucket
+              S3Key: lambda/hpx-cloudfront-logs-production.zip
+          Handler: "index.handler"
+          Role: !Ref PixelLogLambdaRole
+          Runtime: "nodejs8.10"
+          Environment:
+              Variables:
+                  KINESIS_DELIVERY_STREAM: "TBD"
+
+    PixelLogLambdaAlias:
+        Type: "AWS::Lambda::Alias"
+        Properties:
+            Name: "PixelLogLambdaAlias"
+            FunctionName: !Ref PixelLogLambda
+            FunctionVersion: "$LATEST"
