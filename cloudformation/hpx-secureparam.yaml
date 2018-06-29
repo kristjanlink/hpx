@@ -1,0 +1,73 @@
+Resources:
+    HPXSecureParamLambdaRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - lambda.amazonaws.com
+                        Action:
+                            - sts:AssumeRole
+            Policies:
+                -
+                    PolicyName: HPXSecureParamLambdaPolicy
+                    PolicyDocument:
+                        Version: '2012-10-17'
+                        Statement:
+                            -
+                                Effect: Allow
+                                Action:
+                                    - logs:CreateLogGroup
+                                    - logs:CreateLogStream
+                                    - logs:PutLogEvents
+                                Resource: arn:aws:logs:*:*:*
+                            -
+                                Effect: Allow
+                                Action:
+                                    - ssm:PutParameter
+                                    - ssm:DeleteParameter
+                                    - kms:Encrypt
+                                Resource: "*"
+
+    HPXSecureParamLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+          Handler: index.handler
+          Role: !Ref HPXSecureParamLambdaRole
+          Runtime: nodejs8.10
+          Code:
+              ZipFile: >
+                var response = require('cfn-response')
+                var aws = require('aws-sdk')
+                var ssm = new aws.SSM()
+
+                exports.handler = async function(event, context, callback) {
+                    var [region, accountId, stackGuid] = event.StackId.split(":").slice(3,5)
+                    var stackName = stackGuid.split("/")[1]
+
+                    var params = Object.assign({ "Name": "", "Value": "", "Type": "", "KeyId": ""},event.ResourceProperties)
+                    params.Arn = `arn:aws:ssm:${region}:${accountId}:${props.Name}`
+                    var ssmresponse = null
+
+                    if (event.RequestType == "Create") {
+                      params.Overwite = false
+                      ssmresponse = await ssm.putParameter(params).promise()
+                    } elseif (event.RequestType == "Update") {
+                      params.Overwrite = true
+                      ssmresponse = await ssm.putParameter(params).promise()
+                    } elseif (event.RequestType == "Delete")
+                      ssmresponse = await ssm.deleteParameter(params).promise()
+                    } else {
+                      ssmresponse = await ssm.getParameter(params).promise()
+                    }
+                    var response = Object.assign({ "Status": "SUCCESS", "LogicalResourceId": "HPXSecureParam", "Data": ssmresponse.data } },
+                    console.log(response)
+                    callback(null, response)
+                  }
+Outputs:
+    Arn:
+        Value: !GetAtt HPXSecureParamLambda.Arn

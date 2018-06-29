@@ -133,6 +133,75 @@ Resources:
                             - "firehose:ListDeliveryStreams"
                             - "xray:PutTraceSegments"
                         Resource: "*"
+    HPXSecureParamLambdaRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action:
+                - sts:AssumeRole
+        Policies:
+          - PolicyName: HPXSecureParamLambdaPolicy
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                  Resource: arn:aws:logs:*:*:*
+                - Effect: Allow
+                  Action:
+                    - ssm:PutParameter
+                    - ssm:DeleteParameter
+                    - kms:Encrypt
+                  Resource: "*"
+    HPXSecureParamLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        Handler: index.handler
+        Role:
+        Runtime: nodejs8.10
+        Code:
+          ZipFile: >
+            var response = require('cfn-response')
+            var aws = require('aws-sdk')
+            var ssm = new aws.SSM()
+
+            exports.handler = async function(event, context, callback) {
+                var [region, accountId, stackGuid] = event.StackID.split(":").slice(3,5)
+                var stackName = stackGuid.split("/")[1]
+
+                var params = Object.assign({ Name: "", Value: "", Type: "", KeyId: ""},event.ResourceProperties)
+                params.Arn = `arn:aws:ssm:${region}:${accountId}:${props.Name}`
+                var response = null
+
+                if (event.RequestType == "Create") {
+                  params.Overwite = false
+                  response = await ssm.putParameter(params).promise()
+                } elseif (event.RequestType == "Update") {
+                  params.Overwrite = true
+                  response = await ssm.putParameter(params).promise()
+                } elseif (event.RequestType == "Delete")
+                  response = await ssm.deleteParameter(params).promise()
+                } else {
+                  response = await ssm.getParameter(params).promise()
+                }
+                console.log(response)
+                callback(null, response)
+              }
+
+
+
+
+
+
 
     PixelLogLambda:
       Type: "AWS::Lambda::Function"
@@ -163,7 +232,7 @@ Resources:
             RedshiftDestinationConfiguration:
                 ClusterJDBCURL: TBD
                 CopyCommand: TBD
-                Username: TBD
-                Password: TBD
+                Username: !Ref RedShiftUser
+                Password: !Ref RedShiftPassword
                 RoleARN: TBD
                 S3Configuration:

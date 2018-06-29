@@ -7,7 +7,10 @@ cd $HPXDIR
 mkdir -p ./dist
 [ -a "./dist/hpx.zip" ] && rm ./dist/hpx.zip
 
-zip -q -r hpx . -x ./dist/\*
+zip -q -r hpx . -x ./dist/\* -x .git/\* -x .gitignore
 mv hpx.zip ./dist
 
-aws s3 sync $HPXDIR s3://hpx-code/$BRANCH --delete
+aws s3 sync $HPXDIR s3://hpx-code/$BRANCH \
+  --delete \
+  --exclude .git/\* \
+  --exclude .gitignore \
