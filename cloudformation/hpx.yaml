@@ -7,7 +7,13 @@ Parameters:
         Default: "hpx"
     DistS3Bucket:
         Type: String
-        Default: "s3://hpx-code"
+        Default: "hpx-code.s3.amazonaws.com"
+    RedShiftUser:
+        Type: String
+        Default: "turbo"
+    RedShiftPassword:
+        Type: String
+        NoEcho: true
 
 Resources:
     PixelServerCloudFrontOriginAccessId:
@@ -22,7 +28,7 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "${prefix}-${env}-srv-${AWS::Region}"
+                - "${prefix}-${env}-srv-${AWS::Region}-${AWS::AccountId}"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
             AccessControl: "Private"
 
@@ -44,9 +50,13 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "${prefix}-${env}-log-${AWS::Region}"
+                - "${prefix}-${env}-log-${AWS::Region}-${AWS::AccountId}"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
             AccessControl: "Private"
+            NotificationConfiguration:
+                LambdaConfigurations:
+                    Event: "s3:ObjectCreated:Put"
+                    Function: !Ref PixelLogLambdaAlias
 
     PixelServerCloudfrontDistribution:
         Type: "AWS::CloudFront::Distribution"
@@ -93,8 +103,8 @@ Resources:
                       Effect: "Allow"
                       Principal:
                           Service:
-                              - "lambda.amazonaws.com"
-                              - "edgelambda.amazonaws.com"
+                              - !Sub ["lambda.${AWS::URLSuffix}", {}]
+                              - !Sub ["edgelambda.${AWS::URLSuffix}", {}]
                       Action:
                           - "sts:AssumeRole"
         Policies:
@@ -107,7 +117,7 @@ Resources:
                 Statement:
                     -
                         Sid: !Sub
-                            - "${prefix}-${env}-pixellog-lambda-policy"
+                            - "${prefix}${env}PixelLogLambdaPolicy"
                             - { env: !Ref Environment, prefix: !Ref Prefix }
                         Effect: "Allow"
                         Action:
@@ -131,7 +141,7 @@ Resources:
               S3Bucket: !Ref DistS3Bucket
               S3Key: lambda/hpx-cloudfront-logs-production.zip
           Handler: "index.handler"
-          Role: !Ref PixelLogLambdaRole
+          Role: !GetAtt PixelLogLambdaRole.Arn
           Runtime: "nodejs8.10"
           Environment:
               Variables:
@@ -143,3 +153,17 @@ Resources:
             Name: "PixelLogLambdaAlias"
             FunctionName: !Ref PixelLogLambda
             FunctionVersion: "$LATEST"
+
+    PixelLogKinesisFirehose:
+        Type: "AWS::KinesisFirehose::DeliveryStream"
+        Properties:
+            DeliveryStreamName: !Sub
+                - "${prefix}-${env}-pixellog-delivery-stream"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
+            RedshiftDestinationConfiguration:
+                ClusterJDBCURL: TBD
+                CopyCommand: TBD
+                Username: TBD
+                Password: TBD
+                RoleARN: TBD
+                S3Configuration:
