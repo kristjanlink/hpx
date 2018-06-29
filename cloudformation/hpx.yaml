@@ -135,6 +135,18 @@ Resources:
                         Resource: "*"
 
 
+    HPXRedshiftCluster:
+      Type: "AWS::Redshift::Cluster"
+      Properties:
+        DBName: "BLAH"
+        MasterUsername: "BLAH"
+        MasterUserPassword:
+          Ref: "MasterUserPassword"
+        NodeType: "dc2.large"
+        ClusterType: "single-node"
+        Tags:
+          - Key: foo
+            Value: bar
 
 
 
