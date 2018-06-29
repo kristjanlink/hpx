@@ -30,7 +30,7 @@ Resources:
             BucketName: !Sub
                 - "${prefix}-${env}-srv-${AWS::Region}-${AWS::AccountId}"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
-            AccessControl: "Private"
+            AccessControl: PublicRead
             WebsiteConfiguration:
                 IndexDocument: "1x1.gif"
 
@@ -41,12 +41,19 @@ Resources:
             PolicyDocument:
                 Statement:
                     -
-                        Action:
-                            - "s3:GetObject"
+                        Sid: PixelServerCloudFrontReadAccess
+                        Action: "s3:GetObject"
                         Effect: "Allow"
                         Resource: !Join ['', [!GetAtt PixelServerS3Bucket.Arn, "/*"]]
                         Principal:
                             CanonicalUser: !GetAtt PixelServerCloudFrontOriginAccessId.S3CanonicalUserId
+                    -
+                        Sid: PixelServerPublicReadAccess
+                        Action: s3:GetObject
+                        Effect: Allow
+                        Resource: !Join ['', [!GetAtt PixelServerS3Bucket.Arn, "/*"]]
+                        Principal: '*'
+
 
     PixelLogS3Bucket:
         DependsOn: PixelLogLambda
@@ -68,7 +75,7 @@ Resources:
         Properties:
             DistributionConfig:
                 Enabled: "true"
-                DefaultRootObject: index.html
+                DefaultRootObject: "1x1.gif"
                 PriceClass: "PriceClass_All"
                 DefaultCacheBehavior:
                     TargetOriginId: !Ref PixelServerS3Bucket
@@ -121,9 +128,7 @@ Resources:
                     Version: "2012-10-17"
                     Statement:
                         -
-                            Sid: !Sub
-                                - "${prefix}${env}PixelLogLambdaPolicy"
-                                - { env: !Ref Environment, prefix: !Ref Prefix }
+                            Sid: PixelLogLambdaExecutionContext
                             Effect: "Allow"
                             Action:
                                 - "s3:PutObject"
