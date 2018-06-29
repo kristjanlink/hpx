@@ -1,13 +1,12 @@
 Parameters:
     Environment:
         Type: String
-        Default: "dev"
     Prefix:
         Type: String
         Default: "hpx"
     DistS3Bucket:
         Type: String
-        Default: "hpx-code.s3.amazonaws.com"
+        Default: "hpx-code"
     RedShiftUser:
         Type: String
         Default: "turbo"
@@ -46,7 +45,7 @@ Resources:
                         Principal:
                             CanonicalUser: !GetAtt PixelServerCloudFrontOriginAccessId.S3CanonicalUserId
 
-    PixelLog3Bucket:
+    PixelLogS3Bucket:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
@@ -55,8 +54,9 @@ Resources:
             AccessControl: "Private"
             NotificationConfiguration:
                 LambdaConfigurations:
-                    Event: "s3:ObjectCreated:Put"
-                    Function: !Ref PixelLogLambdaAlias
+                    -
+                        Event: "s3:ObjectCreated:Put"
+                        Function: !Ref PixelLogLambdaAlias
 
     PixelServerCloudfrontDistribution:
         Type: "AWS::CloudFront::Distribution"
@@ -80,7 +80,7 @@ Resources:
                     Compress: "true"
 
                 Logging:
-                    Bucket: !GetAtt PixelLog3Bucket.DomainName
+                    Bucket: !GetAtt PixelLogS3Bucket.DomainName
                 Origins:
                     -
                         DomainName: !GetAtt PixelServerS3Bucket.DomainName
@@ -133,69 +133,7 @@ Resources:
                             - "firehose:ListDeliveryStreams"
                             - "xray:PutTraceSegments"
                         Resource: "*"
-    HPXSecureParamLambdaRole:
-      Type: AWS::IAM::Role
-      Properties:
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - lambda.amazonaws.com
-              Action:
-                - sts:AssumeRole
-        Policies:
-          - PolicyName: HPXSecureParamLambdaPolicy
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - logs:CreateLogGroup
-                    - logs:CreateLogStream
-                    - logs:PutLogEvents
-                  Resource: arn:aws:logs:*:*:*
-                - Effect: Allow
-                  Action:
-                    - ssm:PutParameter
-                    - ssm:DeleteParameter
-                    - kms:Encrypt
-                  Resource: "*"
-    HPXSecureParamLambda:
-      Type: AWS::Lambda::Function
-      Properties:
-        Handler: index.handler
-        Role:
-        Runtime: nodejs8.10
-        Code:
-          ZipFile: >
-            var response = require('cfn-response')
-            var aws = require('aws-sdk')
-            var ssm = new aws.SSM()
 
-            exports.handler = async function(event, context, callback) {
-                var [region, accountId, stackGuid] = event.StackID.split(":").slice(3,5)
-                var stackName = stackGuid.split("/")[1]
-
-                var params = Object.assign({ Name: "", Value: "", Type: "", KeyId: ""},event.ResourceProperties)
-                params.Arn = `arn:aws:ssm:${region}:${accountId}:${props.Name}`
-                var response = null
-
-                if (event.RequestType == "Create") {
-                  params.Overwite = false
-                  response = await ssm.putParameter(params).promise()
-                } elseif (event.RequestType == "Update") {
-                  params.Overwrite = true
-                  response = await ssm.putParameter(params).promise()
-                } elseif (event.RequestType == "Delete")
-                  response = await ssm.deleteParameter(params).promise()
-                } else {
-                  response = await ssm.getParameter(params).promise()
-                }
-                console.log(response)
-                callback(null, response)
-              }
 
 
 
@@ -208,7 +146,9 @@ Resources:
       Properties:
           Code:
               S3Bucket: !Ref DistS3Bucket
-              S3Key: lambda/hpx-cloudfront-logs-production.zip
+              S3Key: !Sub
+                  - "${env}/lambda/hpx-cloudfront-logs-production.zip"
+                  - { env: !Ref Environment }
           Handler: "index.handler"
           Role: !GetAtt PixelLogLambdaRole.Arn
           Runtime: "nodejs8.10"
@@ -223,16 +163,16 @@ Resources:
             FunctionName: !Ref PixelLogLambda
             FunctionVersion: "$LATEST"
 
-    PixelLogKinesisFirehose:
-        Type: "AWS::KinesisFirehose::DeliveryStream"
-        Properties:
-            DeliveryStreamName: !Sub
-                - "${prefix}-${env}-pixellog-delivery-stream"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
-            RedshiftDestinationConfiguration:
-                ClusterJDBCURL: TBD
-                CopyCommand: TBD
-                Username: !Ref RedShiftUser
-                Password: !Ref RedShiftPassword
-                RoleARN: TBD
-                S3Configuration:
+#    PixelLogKinesisFirehose:
+#        Type: "AWS::KinesisFirehose::DeliveryStream"
+#        Properties:
+#            DeliveryStreamName: !Sub
+#                - "${prefix}-${env}-pixellog-delivery-stream"
+#                - { env: !Ref Environment, prefix: !Ref Prefix }
+#            RedshiftDestinationConfiguration:
+#                ClusterJDBCURL: TBD
+#                CopyCommand: TBD
+#                Username: !Ref RedShiftUser
+#                Password: !Ref RedShiftPassword
+#                RoleARN: TBD
+#                S3Configuration:
