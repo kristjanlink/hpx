@@ -2,16 +2,12 @@
 # ./create-change-set.sh <stack name>
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 LUSER=`whoami`
-ENVIRONMENT="prod"
+ENVIRONMENT=$BRANCH
 REGION=`aws configure get region`
 
 if [ -z $REDSHIFT_PASSWORD ]; then
   echo "You must set environment variable REDSHIFT_PASSWORD to proceed!"
   exit
-fi
-
-if [ $BRANCH != "master" ]; then
-  ENVIRONMENT=$BRANCH
 fi
 
 echo "Creating changeset for stack hpx-$BRANCH"
@@ -32,7 +28,6 @@ aws cloudformation create-change-set \
   --change-set-name hpx-manual-changeset-$LUSER-$REGION \
   --parameters \
 ParameterKey=\"Environment\",\
-ParameterValue=\"$ENVIRONMENT\",\
-UsePreviousValue=false,\
+ParameterValue=\"$ENVIRONMENT\" \
 ParameterKey=\"RedShiftPassword\",\
 ParameterValue=\"$REDSHIFT_PASSWORD\"\
