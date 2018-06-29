@@ -17,14 +17,14 @@ echo "You are in region $REGION"
 
 #aws cloudformation create-change-set \
 #  --capabilities CAPABILITY_NAMED_IAM \
-#  --stack-name hpx-secureparam-$BRANCH-$REGION \
-#  --template-url https://s3-$REGION.amazonaws.com/hpx-code/$BRANCH/cloudformation/hpx-secureparam.yaml \
+#  --stack-name hpx-secureparam-$ENVIRONMENT-$REGION \
+#  --template-url https://s3-$REGION.amazonaws.com/hpx-code/$ENVIRONMENT/cloudformation/hpx-secureparam.yaml \
 #  --change-set-name hpx-secureparam-manual-changeset-$LUSER-$REGION
 
 aws cloudformation create-change-set \
   --capabilities CAPABILITY_NAMED_IAM \
-  --stack-name hpx-$BRANCH-$REGION \
-  --template-url https://s3-$REGION.amazonaws.com/hpx-code/$BRANCH/cloudformation/hpx.yaml \
+  --stack-name hpx-$ENVIRONMENT-$REGION \
+  --template-url https://s3-$REGION.amazonaws.com/hpx-code/$ENVIRONMENT/cloudformation/hpx.yaml \
   --change-set-name hpx-manual-changeset-$LUSER-$REGION \
   --parameters \
 ParameterKey=\"Environment\",\
