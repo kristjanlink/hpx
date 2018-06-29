@@ -2,7 +2,7 @@
 # ./create-change-set.sh <stack name>
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 LUSER=`whoami`
-ENVIRONMENT=$BRANCH
+ENVIRONMENT=${BRANCH//[^a-zA-Z0-9]/}
 REGION=`aws configure get region`
 
 if [ -z $REDSHIFT_PASSWORD ]; then
