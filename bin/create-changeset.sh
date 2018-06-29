@@ -35,5 +35,4 @@ ParameterKey=\"Environment\",\
 ParameterValue=\"$ENVIRONMENT\",\
 UsePreviousValue=false,\
 ParameterKey=\"RedShiftPassword\",\
-ParameterValue=\"$REDSHIFT_PASSWORD\",\
-UsePreviousValue=true,\
+ParameterValue=\"$REDSHIFT_PASSWORD\"\
