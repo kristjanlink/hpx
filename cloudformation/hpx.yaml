@@ -1,6 +1,7 @@
 Parameters:
     Environment:
         Type: String
+        AllowedPattern: "^[a-zA-Z0-9]+$"
     Prefix:
         Type: String
         Default: "hpx"
@@ -46,6 +47,7 @@ Resources:
                             CanonicalUser: !GetAtt PixelServerCloudFrontOriginAccessId.S3CanonicalUserId
 
     PixelLogS3Bucket:
+#        DependsOn: PixelLogLambdaAlias
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
