@@ -52,11 +52,11 @@ Resources:
                 - "${prefix}-${env}-log-${AWS::Region}-${AWS::AccountId}"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
             AccessControl: "Private"
-            NotificationConfiguration:
-                LambdaConfigurations:
-                    -
-                        Event: "s3:ObjectCreated:Put"
-                        Function: !Ref PixelLogLambdaAlias
+#            NotificationConfiguration:
+#                LambdaConfigurations:
+#                    -
+#                        Event: "s3:ObjectCreated:Put"
+#                        Function: !Ref PixelLogLambdaAlias
 
     PixelServerCloudfrontDistribution:
         Type: "AWS::CloudFront::Distribution"
@@ -141,27 +141,27 @@ Resources:
 
 
 
-    PixelLogLambda:
-      Type: "AWS::Lambda::Function"
-      Properties:
-          Code:
-              S3Bucket: !Ref DistS3Bucket
-              S3Key: !Sub
-                  - "${env}/lambda/hpx-cloudfront-logs-production.zip"
-                  - { env: !Ref Environment }
-          Handler: "index.handler"
-          Role: !GetAtt PixelLogLambdaRole.Arn
-          Runtime: "nodejs8.10"
-          Environment:
-              Variables:
-                  KINESIS_DELIVERY_STREAM: "TBD"
+#    PixelLogLambda:
+#      Type: "AWS::Lambda::Function"
+#      Properties:
+#          Code:
+#              S3Bucket: !Ref DistS3Bucket
+#              S3Key: !Sub
+#                  - "${env}/lambda/hpx-cloudfront-logs-production.zip"
+#                  - { env: !Ref Environment }
+#          Handler: "index.handler"
+#          Role: !GetAtt PixelLogLambdaRole.Arn
+#          Runtime: "nodejs8.10"
+#          Environment:
+#              Variables:
+#                  KINESIS_DELIVERY_STREAM: "TBD"
 
-    PixelLogLambdaAlias:
-        Type: "AWS::Lambda::Alias"
-        Properties:
-            Name: "PixelLogLambdaAlias"
-            FunctionName: !Ref PixelLogLambda
-            FunctionVersion: "$LATEST"
+#    PixelLogLambdaAlias:
+#        Type: "AWS::Lambda::Alias"
+#        Properties:
+#            Name: "PixelLogLambdaAlias"
+#            FunctionName: !Ref PixelLogLambda
+#            FunctionVersion: "$LATEST"
 
 #    PixelLogKinesisFirehose:
 #        Type: "AWS::KinesisFirehose::DeliveryStream"
