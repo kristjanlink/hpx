@@ -10,10 +10,9 @@ if [ -z $REDSHIFT_PASSWORD ]; then
   exit
 fi
 
-echo "Creating changeset for stack hpx-$BRANCH"
-echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT"
-echo "You are in region $REGION"
 
+echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION"
+echo "Creating changeset for stack hpx-$ENVIRONMENT-$REGION"
 
 #aws cloudformation create-change-set \
 #  --capabilities CAPABILITY_NAMED_IAM \
