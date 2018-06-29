@@ -140,17 +140,14 @@ Resources:
     HPXRedshiftCluster:
       Type: "AWS::Redshift::Cluster"
       Properties:
-        DBName: "BLAH"
-                - "${prefix}-${env}-log-${AWS::Region}-${AWS::AccountId}"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+        DBName: !Sub
+          - "${prefix}-${env}-rscluster-${AWS::Region}-${AWS::AccountId}"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
         MasterUsername: !Ref RedShiftUser
         MasterUserPassword: !Ref RedShiftPassword
         AvailabilityZone: "us-west-2b"
         NodeType: "dc2.large"
         ClusterType: "single-node"
-        Tags:
-          - Key: foo
-            Value: bar
         ClusterParameterGroupName: "default.redshift-1.0"
         IamRoles:
           - "arn:aws:iam::712168529562:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
