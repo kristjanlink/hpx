@@ -8,10 +8,10 @@ Parameters:
     DistS3Bucket:
         Type: String
         Default: "hpx-code"
-    RedShiftUser:
+    RedshiftUser:
         Type: String
         Default: "turbo"
-    RedShiftPassword:
+    RedshiftPassword:
         Type: String
         NoEcho: true
 
@@ -256,27 +256,51 @@ Resources:
       Type: "AWS::Redshift::Cluster"
       Properties:
         DBName: !Sub
-          - "${prefix}-${env}-rscluster-${AWS::Region}-${AWS::AccountId}"
+          - "${prefix}_${env}"
           - { env: !Ref Environment, prefix: !Ref Prefix }
-        MasterUsername: !Ref RedShiftUser
-        MasterUserPassword: !Ref RedShiftPassword
+        MasterUsername: !Ref RedshiftUser
+        MasterUserPassword: !Ref RedshiftPassword
         NodeType: "dc2.large"
+        ClusterIdentifier: !Sub
+          - "${prefix}-${env}"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
           - "arn:aws:iam::712168529562:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
         VpcSecurityGroupIds:
           - "sg-b17d3ace"
 
-#    PixelLogKinesisFirehose:
-#        Type: "AWS::KinesisFirehose::DeliveryStream"
-#        Properties:
-#            DeliveryStreamName: !Sub
-#                - "${prefix}-${env}-pixellog-delivery-stream"
-#                - { env: !Ref Environment, prefix: !Ref Prefix }
-#            RedshiftDestinationConfiguration:
-#                ClusterJDBCURL: TBD
-#                CopyCommand: TBD
-#                Username: !Ref RedShiftUser
-#                Password: !Ref RedShiftPassword
-#                RoleARN: TBD
-#                S3Configuration:
+    PixelLogKinesisFirehose:
+      Type: "AWS::KinesisFirehose::DeliveryStream"
+      Properties:
+        DeliveryStreamName: !Sub
+          - "${prefix}-${env}-pixellog-delivery-stream"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
+        RedshiftDestinationConfiguration:
+          ClusterJDBCURL: !Sub
+            - "jdbc:redshift://${endpoint}:${port}/${prefix}_${env}"
+            - { endpoint: !GetAtt HPXRedshiftCluster.Endpoint.Address, port: !GetAtt HPXRedshiftCluster.Endpoint.Port, env: !Ref Environment, prefix: !Ref Prefix }
+          CopyCommand:
+            CopyOptions: "DELIMITER '\t' TIMEFORMAT 'auto'"
+            DataTableColumns: "request_time, ip, useragent, url, a, b, c, d, referrer, cookie"
+            DataTableName: "pixels"
+          Username: !Ref RedshiftUser
+          Password: !Ref RedshiftPassword
+          RoleARN: "arn:aws:iam::712168529562:role/hpx_firehose_delivery_role"
+          S3Configuration:
+            BucketARN: !GetAtt KinesisFirehoseIntermediateS3Bucket.Arn
+            BufferingHints:
+              IntervalInSeconds: 300
+              SizeInMBs: 1
+            CompressionFormat: "UNCOMPRESSED"
+            RoleARN: "arn:aws:iam::712168529562:role/hpx_firehose_delivery_role"
+
+    KinesisFirehoseIntermediateS3Bucket:
+        Type: "AWS::S3::Bucket"
+        Properties:
+          BucketName: !Sub
+            - "${prefix}-${env}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
+            - { env: !Ref Environment, prefix: !Ref Prefix }
+          AccessControl: "Private"
+
+
