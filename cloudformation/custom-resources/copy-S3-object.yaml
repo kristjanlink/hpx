@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Custom CloudFormation resource for copying objects between S3 buckets.
+
+Resources:
+  CopyS3Object:
+    Type: AWS::Lambda::Function
+    Properties:
+          Handler: index.handler
+          Role: !GetAtt CopyS3ObjectRole.Arn
+          Runtime: nodejs6.10
+          Code:
+              ZipFile: >
+                  var response = require('cfn-response');
+                  var aws = require('aws-sdk');
+                  var s3 = new aws.S3();
+
+                  exports.handler = function(event, context) {
+                    var responseData = {};
+                    var responseStatus = response.SUCCESS;
+
+                    if (event.RequestType == "Create" || event.RequestType == "Update") {
+                  /*    s3.copyObject( {
+                        "CopySource": `${event.ResourceProperties.SourceBucket}/${event.ResourceProperties.SourceKey}`,
+                        "Bucket": event.ResourceProperties.DestinationBucket,
+                        "Key": event.ResourceProperties.DestinationKey
+                      }, function(err, data) {
+                      if (err) {
+                        console.log(err, err.stack);
+                        responseStatus = response.FAILED;
+                      } else {
+                        console.log(data);
+                        responseData = data;
+                      }});*/
+
+                      response.send(event, context, responseStatus, responseData);
+                    }
+                  };
+
+  CopyS3ObjectRole:
+      Type: AWS::IAM::Role
+      Properties:
+          AssumeRolePolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                  -
+                      Effect: Allow
+                      Principal:
+                          Service:
+                              - lambda.amazonaws.com
+                      Action:
+                          - sts:AssumeRole
+          Policies:
+              -
+                  PolicyName: CopyS3ObjectPolicy
+                  PolicyDocument:
+                      Version: '2012-10-17'
+                      Statement:
+                          -
+                              Effect: Allow
+                              Action:
+                                  - logs:CreateLogGroup
+                                  - logs:CreateLogStream
+                                  - logs:PutLogEvents
+                              Resource: arn:aws:logs:*:*:*
+                          -
+                              Sid: "AccessSourceAndDestinationBuckets"
+                              Effect: Allow
+                              Action:
+                                  - s3:ListBucket
+                                  - s3:ListBucketVersions
+                                  - s3:GetObject
+                                  - s3:GetObjectVersion
+                                  - s3:PutObject
+                              Resource: arn:aws:s3:::*
+
+Outputs:
+    Arn:
+      Description: The arn of the custom resource function.
+      Value: !GetAtt CopyS3Object.Arn
+      Export:
+          Name: CopyS3Object
