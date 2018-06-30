@@ -16,6 +16,24 @@ Parameters:
         NoEcho: true
 
 Resources:
+    CopyS3ObjectStack:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: !Sub
+                - "https://s3-${AWS::Region}.${AWS::URLSuffix}/${codebucket}/${env}/cloudformation/custom-resources/copy-S3-object.yaml"
+                - { env: !Ref Environment, codebucket: !Ref DistS3Bucket }
+
+    CopyS3Object:
+        Type: Custom::CopyS3Object
+        Properties:
+            ServiceToken: !GetAtt CopyS3ObjectStack.Outputs.Arn
+            SourceBucket: !Ref DistS3Bucket
+            SourceKey: !Sub
+                - "${env}/s3/pixelserver/1x1.gif"
+                - { env: !Ref Environment }
+            DestinationBucket: !Ref PixelServerS3Bucket
+            DestinationKey: "1x1.gif"
+
     PixelServerCloudFrontOriginAccessId:
         Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
         Properties:
