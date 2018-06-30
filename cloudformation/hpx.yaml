@@ -16,17 +16,17 @@ Parameters:
         NoEcho: true
 
 Resources:
-    CopyS3ObjectStack:
+    CustomResourcesStack:
         Type: AWS::CloudFormation::Stack
         Properties:
             TemplateURL: !Sub
-                - "https://s3-${AWS::Region}.${AWS::URLSuffix}/${codebucket}/${env}/cloudformation/custom-resources/copy-S3-object.yaml"
+                - "https://s3-${AWS::Region}.${AWS::URLSuffix}/${codebucket}/${env}/cloudformation/custom-resources.yaml"
                 - { env: !Ref Environment, codebucket: !Ref DistS3Bucket }
 
     CopyS3Object:
         Type: Custom::CopyS3Object
         Properties:
-            ServiceToken: !GetAtt CopyS3ObjectStack.Outputs.Arn
+            ServiceToken: !GetAtt CustomResourcesStack.Outputs.CopyS3Object
             SourceBucket: !Ref DistS3Bucket
             SourceKey: !Sub
                 - "${env}/s3/pixelserver/1x1.gif"

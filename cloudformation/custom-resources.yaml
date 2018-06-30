@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Custom CloudFormation resource for copying objects between S3 buckets.
+Description: Custom CloudFormation resources used in configuring HPX.
 
 Resources:
   CopyS3Object:
     Type: AWS::Lambda::Function
     Properties:
           Handler: index.handler
-          Role: !GetAtt CopyS3ObjectRole.Arn
+          Role: !GetAtt CustomResourcesRole.Arn
           Runtime: nodejs6.10
           Code:
               ZipFile: >
@@ -33,7 +33,7 @@ Resources:
                     }
                   };
 
-  CopyS3ObjectRole:
+  CustomResourcesRole:
       Type: AWS::IAM::Role
       Properties:
           AssumeRolePolicyDocument:
@@ -71,8 +71,6 @@ Resources:
                               Resource: arn:aws:s3:::*
 
 Outputs:
-    Arn:
+    CopyS3Object:
       Description: The arn of the custom resource function.
       Value: !GetAtt CopyS3Object.Arn
-      Export:
-          Name: CopyS3Object
