@@ -16,6 +16,26 @@ Parameters:
         NoEcho: true
 
 Resources:
+
+
+
+
+    HPXRedshiftCluster:
+      Type: "AWS::Redshift::Cluster"
+      Properties:
+        DBName: !Sub
+          - "${prefix}-${env}-rscluster-${AWS::Region}-${AWS::AccountId}"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
+        MasterUsername: !Ref RedShiftUser
+        MasterUserPassword: !Ref RedShiftPassword
+        NodeType: "dc2.large"
+        ClusterType: "single-node"
+        IamRoles:
+          - "arn:aws:iam::712168529562:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
+        VpcSecurityGroupIds:
+          - "sg-b17d3ace"
+
+
     PixelServerCloudFrontOriginAccessId:
         Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
         Properties:
@@ -177,24 +197,3 @@ Resources:
 #                S3Configuration:
 #
 #
-
-
-
-
-    HPXRedshiftCluster:
-      Type: "AWS::Redshift::Cluster"
-      Properties:
-        DBName: !Sub
-          - "${prefix}-${env}-rscluster-${AWS::Region}-${AWS::AccountId}"
-          - { env: !Ref Environment, prefix: !Ref Prefix }
-        MasterUsername: !Ref RedShiftUser
-        MasterUserPassword: !Ref RedShiftPassword
-        NodeType: "dc2.large"
-        ClusterType: "single-node"
-        IamRoles:
-          - "arn:aws:iam::712168529562:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
-        VpcSecurityGroupIds:
-          - "sg-b17d3ace"
-
-
-
