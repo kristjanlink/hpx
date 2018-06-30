@@ -235,7 +235,7 @@ Resources:
             Runtime: "nodejs8.10"
             Environment:
                 Variables:
-                  KINESIS_DELIVERY_STREAM: "TBD"
+                  KINESIS_DELIVERY_STREAM: !Ref PixelLogKinesisFirehose
 
     PixelLogLambdaAlias:
         Type: "AWS::Lambda::Alias"
@@ -302,5 +302,3 @@ Resources:
             - "${prefix}-${env}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
             - { env: !Ref Environment, prefix: !Ref Prefix }
           AccessControl: "Private"
-
-
