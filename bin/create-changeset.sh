@@ -28,5 +28,5 @@ aws cloudformation create-change-set \
   --parameters \
 ParameterKey=\"Environment\",\
 ParameterValue=\"$ENVIRONMENT\" \
-ParameterKey=\"RedShiftPassword\",\
+ParameterKey=\"RedshiftPassword\",\
 ParameterValue=\"$REDSHIFT_PASSWORD\"\
