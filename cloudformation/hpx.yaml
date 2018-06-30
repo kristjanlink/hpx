@@ -178,11 +178,14 @@ Resources:
       Type: "AWS::Redshift::Cluster"
       Properties:
         DBName: !Sub
-          - "${prefix}-${env}-rscluster-${AWS::Region}-${AWS::AccountId}"
+          - "${prefix}_${env}"
           - { env: !Ref Environment, prefix: !Ref Prefix }
         MasterUsername: !Ref RedshiftUser
         MasterUserPassword: !Ref RedshiftPassword
         NodeType: "dc2.large"
+        ClusterIdentifier: !Sub
+          - "${prefix}-${env}"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
           - "arn:aws:iam::712168529562:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
@@ -197,8 +200,8 @@ Resources:
           - { env: !Ref Environment, prefix: !Ref Prefix }
         RedshiftDestinationConfiguration:
           ClusterJDBCURL: !Sub
-            - "jdbc:redshift://${name}.redshift.amazonaws.com:${port}/${name}"
-            - { endpoint: !GetAtt HPXRedshiftCluster.Endpoint.Address, port: !GetAtt HPXRedshiftCluster.Endpoint.Port, name: !Ref HPXRedshiftCluster }
+            - "jdbc:redshift://${endpoint}:${port}/${prefix}_${env}"
+            - { endpoint: !GetAtt HPXRedshiftCluster.Endpoint.Address, port: !GetAtt HPXRedshiftCluster.Endpoint.Port, env: !Ref Environment, prefix: !Ref Prefix }
           CopyCommand:
             CopyOptions: "DELIMITER '\t' TIMEFORMAT 'auto'"
             DataTableColumns: "request_time, ip, useragent, url, a, b, c, d, referrer, cookie"
