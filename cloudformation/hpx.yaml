@@ -221,6 +221,14 @@ Resources:
                                 - "firehose:ListDeliveryStreams"
                                 - "xray:PutTraceSegments"
                             Resource: "*"
+
+    KinesisRedshiftRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            RoleName: !Sub
+                - "${prefix}-${env}-kinesis-redshift-role"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
+            Policies:
               -
                 PolicyName: !Sub
                     - "${prefix}-${env}-kinesis-policy"
@@ -251,7 +259,7 @@ Resources:
                             Resource: "*"
                             Condition:
                               - StringEquals:
-                                  kms:ViaService: !Sub ["kinesis.${AWS::Region}.${AWS::URLSuffix}"]
+                                  kms:ViaService: !Sub ["kinesis.${AWS::Region}.${AWS::URLSuffix}",{}]
                               - StringLike:
                                   kms:EncryptionContext:aws:kinesis:arn: !GetAtt PixelLogKinesisFirehose.Arn
               -
@@ -319,7 +327,7 @@ Resources:
           - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
-          - !GetAtt PixelLogLambdaRole.Arn
+          - !GetAtt KinesisRedshiftRole.Arn
         VpcSecurityGroupIds:
           - "sg-b17d3ace"
 
@@ -362,7 +370,7 @@ Resources:
             DataTableName: "pixels"
           Username: !Ref RedshiftUser
           Password: !Ref RedshiftPassword
-          RoleARN: !GetAtt PixelLogLambdaRole.Arn
+          RoleARN: !GetAtt KinesisRedshiftRole.Arn
           CloudWatchLoggingOptions:
             Enabled: true
             LogGroupName: !Ref KinesisCloudWatchLogGroup
@@ -373,7 +381,7 @@ Resources:
               IntervalInSeconds: 300
               SizeInMBs: 1
             CompressionFormat: "UNCOMPRESSED"
-            RoleARN: !GetAtt PixelLogLambdaRole.Arn
+            RoleARN: !GetAtt KinesisRedshiftRole.Arn
             CloudWatchLoggingOptions:
               Enabled: true
               LogGroupName: !Ref KinesisCloudWatchLogGroup
