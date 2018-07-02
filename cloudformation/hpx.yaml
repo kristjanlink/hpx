@@ -277,6 +277,22 @@ Resources:
           - "/aws/kinesisfirehose/${prefix}-${env}-pixellog-delivery-stream"
           - { env: !Ref Environment, prefix: !Ref Prefix }
 
+    KinesisCloudWatchS3DeliveryLogStream:
+      Type: "AWS::Logs::LogStream"
+      Properties:
+        LogGroupName: !Sub
+          - "/aws/kinesisfirehose/${prefix}-${env}-pixellog-delivery-stream"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
+        LogStreamName: "S3Delivery"
+
+    KinesisCloudWatchRedshiftDeliveryLogStream:
+      Type: "AWS::Logs::LogStream"
+      Properties:
+        LogGroupName: !Sub
+          - "/aws/kinesisfirehose/${prefix}-${env}-pixellog-delivery-stream"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
+        LogStreamName: "RedshiftDelivery"
+
     PixelLogKinesisFirehose:
       Type: "AWS::KinesisFirehose::DeliveryStream"
       Properties:
