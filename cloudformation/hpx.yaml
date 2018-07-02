@@ -221,6 +221,59 @@ Resources:
                                 - "firehose:ListDeliveryStreams"
                                 - "xray:PutTraceSegments"
                             Resource: "*"
+              -
+                PolicyName: !Sub
+                    - "${prefix}-${env}-kinesis-policy"
+                    - { env: !Ref Environment, prefix: !Ref Prefix }
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        -
+                            Effect: "Allow"
+                            Action:
+                                - "s3:AbortMultipartUpload"
+                                - "s3:GetBucketLocation"
+                                - "s3:GetObject"
+                                - "s3:ListBucket"
+                                - "s3:ListBucketMultipartUploads"
+                                - "s3:PutObject"
+                                - "lambda:InvokeFunction"
+                                - "lambda:GetFunctionConfiguration"
+                                - "logs:PutLogEvents"
+                                - "kinesis:DescribeStream"
+                                - "kinesis:GetShardIterator"
+                                - "kinesis:GetRecords"
+                            Resource: "*"
+                        -
+                            Effect: "Allow"
+                            Action:
+                                - "kms:Decrypt"
+                            Resource: "*"
+                            Condition:
+                              - StringEquals:
+                                  kms:ViaService: !Sub ["kinesis.${AWS::Region}.${AWS::URLSuffix}"]
+                              - StringLike:
+                                  kms:EncryptionContext:aws:kinesis:arn: !GetAtt PixelLogKinesisFirehose.Arn
+              -
+                PolicyName: !Sub
+                    - "${prefix}-${env}-redshift-policy"
+                    - { env: !Ref Environment, prefix: !Ref Prefix }
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        -
+                            Effect: "Allow"
+                            Action:
+                                - "ec2:DescribeVpcs"
+                                - "ec2:DescribeSubnets"
+                                - "ec2:DescribeNetworkInterfaces"
+                                - "ec2:DescribeAddresses"
+                                - "ec2:AssociateAddress"
+                                - "ec2:DisassociateAddress"
+                                - "ec2:CreateNetworkInterface"
+                                - "ec2:DeleteNetworkInterface"
+                                - "ec2:ModifyNetworkInterfaceAttribute"
+                            Resource: "*"
 
     PixelLogLambda:
         Type: "AWS::Lambda::Function"
@@ -266,7 +319,7 @@ Resources:
           - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
-          - "arn:aws:iam::712168529562:role/aws-service-role/redshift.amazonaws.com/AWSServiceRoleForRedshift"
+          - !GetAtt PixelLogLambdaRole.Arn
         VpcSecurityGroupIds:
           - "sg-b17d3ace"
 
@@ -309,7 +362,7 @@ Resources:
             DataTableName: "pixels"
           Username: !Ref RedshiftUser
           Password: !Ref RedshiftPassword
-          RoleARN: "arn:aws:iam::712168529562:role/hpx_firehose_delivery_role"
+          RoleARN: !GetAtt PixelLogLambdaRole.Arn
           CloudWatchLoggingOptions:
             Enabled: true
             LogGroupName: !Ref KinesisCloudWatchLogGroup
@@ -320,7 +373,7 @@ Resources:
               IntervalInSeconds: 300
               SizeInMBs: 1
             CompressionFormat: "UNCOMPRESSED"
-            RoleARN: "arn:aws:iam::712168529562:role/hpx_firehose_delivery_role"
+            RoleARN: !GetAtt PixelLogLambdaRole.Arn
             CloudWatchLoggingOptions:
               Enabled: true
               LogGroupName: !Ref KinesisCloudWatchLogGroup
