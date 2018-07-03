@@ -353,15 +353,13 @@ Resources:
     KinesisCloudWatchS3DeliveryLogStream:
       Type: "AWS::Logs::LogStream"
       Properties:
-        LogGroupName: !Sub
-          - !Ref KinesisCloudWatchLogGroup
+        LogGroupName: !Ref KinesisCloudWatchLogGroup
         LogStreamName: "S3Delivery"
 
     KinesisCloudWatchRedshiftDeliveryLogStream:
       Type: "AWS::Logs::LogStream"
       Properties:
-        LogGroupName: !Sub
-          - !Ref KinesisCloudWatchLogGroup
+        LogGroupName: !Ref KinesisCloudWatchLogGroup
         LogStreamName: "RedshiftDelivery"
 
     PixelLogKinesisFirehose:
