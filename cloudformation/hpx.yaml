@@ -26,9 +26,9 @@ Resources:
                         Effect: Allow
                         Principal:
                             Service:
-                                - lambda.amazonaws.com
+                                - "lambda.amazonaws.com"
                         Action:
-                            - sts:AssumeRole
+                            - "sts:AssumeRole"
             Policies:
                 -
                     PolicyName: CopyS3ObjectPolicy
@@ -228,6 +228,16 @@ Resources:
             RoleName: !Sub
                 - "${prefix}-${env}-kinesis-redshift-role"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - "firehose.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRole"
             Policies:
               -
                 PolicyName: !Sub
@@ -258,10 +268,12 @@ Resources:
                                 - "kms:Decrypt"
                             Resource: "*"
                             Condition:
-                              - StringEquals:
-                                  kms:ViaService: !Sub ["kinesis.${AWS::Region}.${AWS::URLSuffix}",{}]
-                              - StringLike:
-                                  kms:EncryptionContext:aws:kinesis:arn: !GetAtt PixelLogKinesisFirehose.Arn
+                                StringEquals:
+                                    kms:ViaService: !Sub ["kinesis.${AWS::Region}.${AWS::URLSuffix}", {}]
+                                StringLike:
+                                    kms:EncryptionContext:aws:kinesis:arn: !Sub
+                                      - "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${prefix}-${env}-pixellog-delivery-stream"
+                                      - { env: !Ref Environment, prefix: !Ref Prefix }
               -
                 PolicyName: !Sub
                     - "${prefix}-${env}-redshift-policy"
