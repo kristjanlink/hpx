@@ -391,7 +391,7 @@ Resources:
             - "jdbc:redshift://${endpoint}:${port}/${prefix}_${env}"
             - { endpoint: !GetAtt HPXRedshiftCluster.Endpoint.Address, port: !GetAtt HPXRedshiftCluster.Endpoint.Port, env: !Ref Environment, prefix: !Ref Prefix }
           CopyCommand:
-            CopyOptions: "DELIMITER '\t' TIMEFORMAT 'auto'"
+            CopyOptions: "DELIMITER '\\t' TIMEFORMAT 'auto'"
             DataTableColumns: "request_time, ip, useragent, url, a, b, c, d, referrer, cookie"
             DataTableName: "pixels"
           Username: !Ref RedshiftUser
