@@ -222,11 +222,11 @@ Resources:
                                 - "xray:PutTraceSegments"
                             Resource: "*"
 
-    KinesisRedshiftRole:
+    KinesisFirehoseDeliveryRole:
         Type: "AWS::IAM::Role"
         Properties:
             RoleName: !Sub
-                - "${prefix}-${env}-kinesis-redshift-role"
+                - "${prefix}-${env}-firehose-delivery-role"
                 - { env: !Ref Environment, prefix: !Ref Prefix }
             AssumeRolePolicyDocument:
                 Version: '2012-10-17'
@@ -241,7 +241,7 @@ Resources:
             Policies:
               -
                 PolicyName: !Sub
-                    - "${prefix}-${env}-kinesis-policy"
+                    - "${prefix}-${env}-firehose-delivery-policy"
                     - { env: !Ref Environment, prefix: !Ref Prefix }
                 PolicyDocument:
                     Version: "2012-10-17"
@@ -274,9 +274,27 @@ Resources:
                                     kms:EncryptionContext:aws:kinesis:arn: !Sub
                                       - "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${prefix}-${env}-pixellog-delivery-stream"
                                       - { env: !Ref Environment, prefix: !Ref Prefix }
+
+    RedshiftAWSServiceRole:
+        Type: "AWS::IAM::Role"
+        Properties:
+            RoleName: !Sub
+                - "${prefix}-${env}-redshift-aws-service-role"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    -
+                        Effect: Allow
+                        Principal:
+                            Service:
+                                - "redshift.amazonaws.com"
+                        Action:
+                            - "sts:AssumeRole"
+            Policies:
               -
                 PolicyName: !Sub
-                    - "${prefix}-${env}-redshift-policy"
+                    - "${prefix}-${env}-redshift-aws-service-policy"
                     - { env: !Ref Environment, prefix: !Ref Prefix }
                 PolicyDocument:
                     Version: "2012-10-17"
@@ -339,7 +357,7 @@ Resources:
           - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
-          - !GetAtt KinesisRedshiftRole.Arn
+          - !GetAtt RedshiftAWSServiceRole.Arn
         VpcSecurityGroupIds:
           - "sg-b17d3ace"
 
@@ -378,7 +396,7 @@ Resources:
             DataTableName: "pixels"
           Username: !Ref RedshiftUser
           Password: !Ref RedshiftPassword
-          RoleARN: !GetAtt KinesisRedshiftRole.Arn
+          RoleARN: !GetAtt KinesisFirehoseDeliveryRole.Arn
           CloudWatchLoggingOptions:
             Enabled: true
             LogGroupName: !Ref KinesisCloudWatchLogGroup
@@ -389,7 +407,7 @@ Resources:
               IntervalInSeconds: 300
               SizeInMBs: 1
             CompressionFormat: "UNCOMPRESSED"
-            RoleARN: !GetAtt KinesisRedshiftRole.Arn
+            RoleARN: !GetAtt KinesisFirehoseDeliveryRole.Arn
             CloudWatchLoggingOptions:
               Enabled: true
               LogGroupName: !Ref KinesisCloudWatchLogGroup
