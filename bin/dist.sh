@@ -8,10 +8,11 @@ cd $HPXDIR
 mkdir -p ./dist
 [ -a "./dist/hpx.zip" ] && rm ./dist/hpx.zip
 
-zip -q -r hpx . -x ./dist/\* -x .git/\* -x .gitignore
+zip -q -r hpx . -x ./dist/\* -x .git/\* -x .gitignore -x ./src/\*
 mv hpx.zip ./dist
 
 aws s3 sync $HPXDIR s3://hpx-code/$ENVIRONMENT \
   --delete \
   --exclude .git/\* \
   --exclude .gitignore \
+  --exclude src/\* \
