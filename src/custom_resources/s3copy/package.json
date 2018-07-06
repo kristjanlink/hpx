@@ -1,0 +1,18 @@
+{
+  "name": "s3copy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "setup": "./node_modules/.bin/node-lambda setup",
+    "test": "./node_modules/.bin/node-lambda run",
+    "package": "./node_modules/.bin/node-lambda package -e '' -x 'event.json .env context.json event_sources.json package.json package-lock.json'",
+    "deploy": "./node_modules/.bin/node-lambda deploy -S event_sources.json",
+    "dist": "cp ./build/s3copy.zip ../../../lambda"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "node-lambda": "^0.11.7"
+  }
+}
