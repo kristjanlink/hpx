@@ -52,6 +52,16 @@ Resources:
                                     - s3:GetObjectVersion
                                     - s3:PutObject
                                 Resource: arn:aws:s3:::*
+                            -
+                                Sid: "AccessVPCs"
+                                Effect: Allow
+                                Action:
+                                    - ec2:CreateNetworkInterface
+                                    - ec2:DeleteNetworkInterface
+                                    - ec2:DescribeNetworkInterfaces
+                                    - lambda:InvokeFunction
+                                Resource: "*"
+
     CopyS3ObjectLambda:
       Type: AWS::Lambda::Function
       Properties:
@@ -59,29 +69,10 @@ Resources:
             Role: !GetAtt CustomResourcesRole.Arn
             Runtime: nodejs6.10
             Code:
-                ZipFile: >
-                    var response = require('cfn-response');
-                    var aws = require('aws-sdk');
-                    var s3 = new aws.S3();
-
-                    exports.handler = function(event, context) {
-                      if (event.RequestType == "Create" || event.RequestType == "Update") {
-                        var request = s3.copyObject( {
-                          "CopySource": `${event.ResourceProperties.SourceBucket}/${event.ResourceProperties.SourceKey}`,
-                          "Bucket": event.ResourceProperties.DestinationBucket,
-                          "Key": event.ResourceProperties.DestinationKey
-                        }, function(err, data) {
-                            if (err) {
-                              console.log("Error:", err, err.stack);
-                              response.send(event, context, response.FAILED)
-                            } else {
-                              console.log("Success:", data);
-                              response.send(event, context, response.SUCCESS, data)
-                            }});
-                      } else {
-                        response.send(event, context, response.SUCCESS, {});
-                      }
-                    };
+                S3Bucket: !Ref DistS3Bucket
+                S3Key: !Sub
+                    - "${env}/lambda/s3copy.zip"
+                    - { env: !Ref Environment }
 
     CopyPixelToPixelServer:
         Type: Custom::CopyS3Object
@@ -93,6 +84,39 @@ Resources:
                 - { env: !Ref Environment }
             DestinationBucket: !Ref PixelServerS3Bucket
             DestinationKey: "1x1.gif"
+
+    PGQueryLambda:
+        Type: AWS::Lambda::Function
+        Properties:
+            Handler: index.handler
+            Role: !GetAtt CustomResourcesRole.Arn
+            Runtime: nodejs6.10
+            Code:
+                S3Bucket: !Ref DistS3Bucket
+                S3Key: !Sub
+                    - "${env}/lambda/pgquery.zip"
+                    - { env: !Ref Environment }
+            VpcConfig:
+                SecurityGroupIds:
+                    - sg-b17d3ace
+                SubnetIds:
+                    - subnet-0c3ef675
+                    - subnet-24bc566f
+                    - subnet-f0e151aa
+
+    CreatePixelsTable:
+        DependsOn: HPXRedshiftCluster
+        Type: Custom::PGQuery
+        Properties:
+            ServiceToken: !GetAtt PGQueryLambda.Arn
+            Query: "create table if not exists pixels(id bigint identity, request_time timestamp, ip varchar(50), useragent varchar(MAX), url varchar(MAX), a varchar(MAX), b varchar(MAX), c varchar(MAX), d varchar(MAX), referrer varchar(max), cookie varchar(max));"
+            User: !Ref RedshiftUser
+            Host: !GetAtt HPXRedshiftCluster.Endpoint.Address
+            Database: !Sub
+                - "${prefix}_${env}"
+                - { env: !Ref Environment, prefix: !Ref Prefix }
+            Password: !Ref RedshiftPassword
+            Port: !GetAtt HPXRedshiftCluster.Endpoint.Port
 
     PixelServerCloudFrontOriginAccessId:
         Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
