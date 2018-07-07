@@ -451,7 +451,7 @@ Resources:
         SubnetIds:
           - !Ref HPXRedshiftClusterVpcSubnet
 
-    HPXRedshiftClusterSecurityGroup:
+    HPXRedshiftClusterVpcSecurityGroup:
       Type: "AWS::EC2::SecurityGroup"
       Properties:
         GroupName: !Sub
@@ -521,8 +521,7 @@ Resources:
           - !GetAtt RedshiftAWSServiceRole.Arn
         ClusterSubnetGroupName: !Ref HPXRedshiftClusterVpcSubnetGroup
         VpcSecurityGroupIds:
-          - !GetAtt HPXRedshiftClusterSecurityGroup.GroupId
-            #- "sg-b17d3ace"
+          - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
 
     KinesisCloudWatchLogGroup:
       Type: "AWS::Logs::LogGroup"
