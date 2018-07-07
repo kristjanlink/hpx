@@ -22,7 +22,7 @@ exports.handler = function(event, context) {
             response.send(event, context, response.FAILED);
           } else {
             console.log("Success:", res.rows);
-            response.send(event, context, response.SUCCESS, res.rows);
+            response.send(event, context, response.SUCCESS, { "Rows" : res.rows });
           }
           client.end();
         });
