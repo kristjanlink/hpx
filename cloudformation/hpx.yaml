@@ -14,6 +14,67 @@ Parameters:
     RedshiftPassword:
         Type: String
         NoEcho: true
+    RedshiftCidrBlock:
+        Type: String
+        Default: "192.168.55.0/24"
+        #AllowedPattern: "^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.).*$" # can be tightened up later...
+
+Mappings:
+  RegionMap:
+    ap-northeast-1:   #Tokyo
+      Kinesis: "13.113.196.224/27"
+      Quicksight: "13.113.244.32/27"
+    ap-northeast-2:   #Seoul
+      Kinesis: ""
+      Quicksight: ""
+    ap-northeast-3:   #Osaka-Local
+      Kinesis: ""
+      Quicksight: ""
+    ap-south-1:       #Mumbai
+      Kinesis: ""
+      Quicksight: ""
+    ap-southeast-1:   #Singapore
+      Kinesis: "13.228.64.192/27"
+      Quicksight: "13.229.254.0/27"
+    ap-southeast-2:   #Sydney
+      Kinesis: "13.210.67.224/27"
+      Quicksight: "54.153.249.96/27"
+    ca-central-1:     #Central
+      Kinesis: ""
+      Quicksight: ""
+    cn-north-1:       #Beijing
+      Kinesis: ""
+      Quicksight: ""
+    cn-northwest-1:   #Ningxia
+      Kinesis: ""
+      Quicksight: ""
+    eu-central-1:     #Frankfurt
+      Kinesis: "35.158.127.160/27"
+      Quicksight: ""
+    eu-west-1:        #Ireland
+      Kinesis: "52.19.239.192/27"
+      Quicksight: "52.210.255.224/27"
+    eu-west-2:        #London
+      Kinesis: ""
+      Quicksight: ""
+    eu-west-3:        #Paris
+      Kinesis: ""
+      Quicksight: ""
+    sa-east-1:        #São Paulo
+      Kinesis: ""
+      Quicksight: ""
+    us-east-1:        #N. Virginia
+      Kinesis: "52.70.63.192/27"
+      Quicksight: "52.23.63.224/27"
+    us-east-2:        #Ohio
+      Kinesis: "13.58.135.96/27"
+      Quicksight: "52.15.247.160/27"
+    us-west-1:        #N. California
+      Kinesis: "13.57.135.192/27"
+      Quicksight: ""
+    us-west-2:        #Oregon
+      Kinesis: "52.89.255.224/27"
+      Quicksight: "54.70.204.128/27"
 
 Resources:
     CustomResourcesRole:
@@ -343,6 +404,47 @@ Resources:
             Principal: !Sub ["s3.${AWS::URLSuffix}", {}]
             SourceAccount: !Ref "AWS::AccountId"
 
+    HPXRedshiftClusterVpc:
+      Type: "AWS::EC2::VPC"
+      Properties:
+        CidrBlock: !Ref RedshiftCidrBlock
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
+        Tags:
+          -
+            Key: "Name"
+            Value: !Sub
+              - "${prefix}-${env}-vpc"
+              - { env: !Ref Environment, prefix: !Ref Prefix }
+
+    HPXRedshiftClusterSecurityGroup:
+      Type: "AWS::EC2::SecurityGroup"
+      Properties:
+        GroupName: !Sub
+          - "${prefix}-${env}-security-group"
+          - { env: !Ref Environment, prefix: !Ref Prefix }
+        GroupDescription: "Group to configure inbound rules for HPX Redshift Cluster"
+        SecurityGroupIngress:
+          -
+            CidrIp: { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "Kinesis" ]}
+            Description: "Kinesis"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+          -
+            CidrIp: { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "Quicksight" ]}
+            Description: "Quicksight"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+          -
+            CidrIp: "24.5.134.249/32"
+            Description: "Redshift from Dan"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+        VpcId: !Ref HPXRedshiftClusterVpc
+
     HPXRedshiftCluster:
       Type: "AWS::Redshift::Cluster"
       Properties:
@@ -359,7 +461,7 @@ Resources:
         IamRoles:
           - !GetAtt RedshiftAWSServiceRole.Arn
         VpcSecurityGroupIds:
-          - "sg-b17d3ace"
+          - !GetAtt HPXRedshiftClusterSecurityGroup.GroupId
 
     KinesisCloudWatchLogGroup:
       Type: "AWS::Logs::LogGroup"
