@@ -417,6 +417,40 @@ Resources:
               - "${prefix}-${env}-vpc"
               - { env: !Ref Environment, prefix: !Ref Prefix }
 
+    HPXRedshiftClusterVpcInternetGateway:
+      Type: "AWS::EC2::InternetGateway"
+
+    HPXRedshiftClusterVpcInternetGatewayAttachment:
+      Type: "AWS::EC2::VPCGatewayAttachment"
+      Properties:
+        InternetGatewayId: !Ref HPXRedshiftClusterVpcInternetGateway
+        VpcId: !Ref HPXRedshiftClusterVpc
+
+    HPXRedshiftClusterVpcRouteTable:
+      Type: "AWS::EC2::RouteTable"
+      Properties:
+        VpcId: !Ref HPXRedshiftClusterVpc
+
+    HPXRedshiftClusterVpcRoute:
+      Type: AWS::EC2::Route
+      Properties:
+        RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
+        DestinationCidrBlock: "0.0.0.0/0"
+        GatewayId: !Ref HPXRedshiftClusterVpcInternetGateway
+
+    HPXRedshiftClusterVpcSubnet:
+      Type: "AWS::EC2::Subnet"
+      Properties:
+        CidrBlock: !Ref RedshiftCidrBlock
+        VpcId: !Ref HPXRedshiftClusterVpc
+
+    HPXRedshiftClusterVpcSubnetGroup:
+      Type: "AWS::Redshift::ClusterSubnetGroup"
+      Properties:
+        Description: "Subnet group for hacker pixel redshift cluster"
+        SubnetIds:
+          - !Ref HPXRedshiftClusterVpcSubnet
+
     HPXRedshiftClusterSecurityGroup:
       Type: "AWS::EC2::SecurityGroup"
       Properties:
@@ -438,6 +472,24 @@ Resources:
             ToPort: 5439
             IpProtocol: "TCP"
           -
+            CidrIp: "216.174.112.44/32"
+            Description: "Redshift from Techspace"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+          -
+            CidrIp: "198.27.243.221/32"
+            Description: "Redshift from Giao"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+          -
+            CidrIp: "73.71.90.13/32"
+            Description: "Redshift from Adolfo"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+          -
             CidrIp: "24.5.134.249/32"
             Description: "Redshift from Dan"
             FromPort: 5439
@@ -445,7 +497,14 @@ Resources:
             IpProtocol: "TCP"
         VpcId: !Ref HPXRedshiftClusterVpc
 
+    HPXRedshiftClusterVpcSubnetRouteTableAssociation:
+      Type: "AWS::EC2::SubnetRouteTableAssociation"
+      Properties:
+        RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
+        SubnetId: !Ref HPXRedshiftClusterVpcSubnet
+
     HPXRedshiftCluster:
+      DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
       Type: "AWS::Redshift::Cluster"
       Properties:
         DBName: !Sub
@@ -455,13 +514,15 @@ Resources:
         MasterUserPassword: !Ref RedshiftPassword
         NodeType: "dc2.large"
         ClusterIdentifier: !Sub
-          - "${prefix}-${env}"
+          - "${prefix}-${env}-2"
           - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
           - !GetAtt RedshiftAWSServiceRole.Arn
+        ClusterSubnetGroupName: !Ref HPXRedshiftClusterVpcSubnetGroup
         VpcSecurityGroupIds:
           - !GetAtt HPXRedshiftClusterSecurityGroup.GroupId
+            #- "sg-b17d3ace"
 
     KinesisCloudWatchLogGroup:
       Type: "AWS::Logs::LogGroup"
