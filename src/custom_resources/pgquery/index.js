@@ -36,7 +36,7 @@ exports.handler = function(event, context) {
               if (err) {
                 console.log('error during disconnection', err.stack);
               };
-              response.send(event, context, response.SUCCESS, { "Rows" : res.rows });
+              response.send(event, context, response.SUCCESS);
               return;
             });
           }
@@ -44,7 +44,7 @@ exports.handler = function(event, context) {
       }
     });
   } else {
-    response.send(event, context, response.SUCCESS, {});
+    response.send(event, context, response.SUCCESS);
     return
   }
 };
