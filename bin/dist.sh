@@ -5,10 +5,12 @@ BRANCH=`git rev-parse --abbrev-ref HEAD`
 ENVIRONMENT=${BRANCH//[^a-zA-Z0-9]/}
 
 cd $HPXDIR/src/custom_resources/s3copy
+npm install
 npm run package
 npm run dist
 
 cd $HPXDIR/src/custom_resources/pgquery
+npm install
 npm run package
 npm run dist
 
