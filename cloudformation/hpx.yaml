@@ -432,6 +432,7 @@ Resources:
         VpcId: !Ref HPXRedshiftClusterVpc
 
     HPXRedshiftClusterVpcRoute:
+      DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
       Type: AWS::EC2::Route
       Properties:
         RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
@@ -458,6 +459,7 @@ Resources:
           - "${prefix}-${env}-security-group"
           - { env: !Ref Environment, prefix: !Ref Prefix }
         GroupDescription: "Group to configure inbound rules for HPX Redshift Cluster"
+        VpcId: !Ref HPXRedshiftClusterVpc
         SecurityGroupIngress:
           -
             CidrIp: { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "Kinesis" ]}
@@ -500,10 +502,11 @@ Resources:
             FromPort: -1
             ToPort: -1
             IpProtocol: "-1"
-            SourceSecurityGroupName: !Sub
-              - "${prefix}-${env}-security-group"
-              - { env: !Ref Environment, prefix: !Ref Prefix }
-        VpcId: !Ref HPXRedshiftClusterVpc
+            SourceSecurityGroupId: !Ref HPXRedshiftClusterVpcSecurityGroup
+#            SourceSecurityGroupName: !Sub
+#              - "${prefix}-${env}-security-group"
+#              - { env: !Ref Environment, prefix: !Ref Prefix }
+
 
     HPXRedshiftClusterVpcSubnetRouteTableAssociation:
       Type: "AWS::EC2::SubnetRouteTableAssociation"
@@ -513,6 +516,7 @@ Resources:
 
     HPXRedshiftCluster:
       DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
+      DependsOn: HPXRedshiftClusterVpcSubnetRouteTableAssociation
       Type: "AWS::Redshift::Cluster"
       Properties:
         DBName: !Sub
