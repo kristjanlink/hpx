@@ -497,16 +497,6 @@ Resources:
             FromPort: 5439
             ToPort: 5439
             IpProtocol: "TCP"
-          -
-            Description: "Allow all internal"
-            FromPort: -1
-            ToPort: -1
-            IpProtocol: "-1"
-            SourceSecurityGroupId: !Ref HPXRedshiftClusterVpcSecurityGroup
-#            SourceSecurityGroupName: !Sub
-#              - "${prefix}-${env}-security-group"
-#              - { env: !Ref Environment, prefix: !Ref Prefix }
-
 
     HPXRedshiftClusterVpcSubnetRouteTableAssociation:
       Type: "AWS::EC2::SubnetRouteTableAssociation"
@@ -534,6 +524,7 @@ Resources:
         ClusterSubnetGroupName: !Ref HPXRedshiftClusterVpcSubnetGroup
         VpcSecurityGroupIds:
           - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
+          - !GetAtt HPXRedshiftClusterVpc.DefaultSecurityGroup
 
     KinesisCloudWatchLogGroup:
       Type: "AWS::Logs::LogGroup"
