@@ -4,14 +4,23 @@ HPXDIR=`dirname $SCRIPTDIR`
 BRANCH=`git rev-parse --abbrev-ref HEAD`
 ENVIRONMENT=${BRANCH//[^a-zA-Z0-9]/}
 
+cd $HPXDIR/src/custom_resources/s3copy
+npm run package
+npm run dist
+
+cd $HPXDIR/src/custom_resources/pgquery
+npm run package
+npm run dist
+
 cd $HPXDIR
 mkdir -p ./dist
 [ -a "./dist/hpx.zip" ] && rm ./dist/hpx.zip
 
-zip -q -r hpx . -x ./dist/\* -x .git/\* -x .gitignore
+zip -q -r hpx . -x ./dist/\* -x .git/\* -x .gitignore -x ./src/\*
 mv hpx.zip ./dist
 
 aws s3 sync $HPXDIR s3://hpx-code/$ENVIRONMENT \
   --delete \
   --exclude .git/\* \
   --exclude .gitignore \
+  --exclude src/\* \
