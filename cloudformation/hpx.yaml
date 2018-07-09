@@ -160,25 +160,27 @@ Resources:
                     - { env: !Ref Environment }
             VpcConfig:
                 SecurityGroupIds:
-                    - sg-b17d3ace
+                    - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
+                    #- sg-b17d3ace
                 SubnetIds:
-                    - subnet-0c3ef675
-                    - subnet-24bc566f
-                    - subnet-f0e151aa
+                    - !Ref HPXRedshiftClusterVpcSubnet
+                    #- subnet-0c3ef675
+                    #- subnet-24bc566f
+                    #- subnet-f0e151aa
 
-    CreatePixelsTable:
-        DependsOn: HPXRedshiftCluster
-        Type: Custom::PGQuery
-        Properties:
-            ServiceToken: !GetAtt PGQueryLambda.Arn
-            Query: "create table if not exists pixels(id bigint identity, request_time timestamp, ip varchar(50), useragent varchar(MAX), url varchar(MAX), a varchar(MAX), b varchar(MAX), c varchar(MAX), d varchar(MAX), referrer varchar(max), cookie varchar(max));"
-            User: !Ref RedshiftUser
-            Host: !GetAtt HPXRedshiftCluster.Endpoint.Address
-            Database: !Sub
-                - "${prefix}_${env}"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
-            Password: !Ref RedshiftPassword
-            Port: !GetAtt HPXRedshiftCluster.Endpoint.Port
+#    CreatePixelsTable:
+#        DependsOn: HPXRedshiftCluster
+#        Type: Custom::PGQuery
+#        Properties:
+#            ServiceToken: !GetAtt PGQueryLambda.Arn
+#            Query: "create table if not exists pixels(id bigint identity, request_time timestamp, ip varchar(50), useragent varchar(MAX), url varchar(MAX), a varchar(MAX), b varchar(MAX), c varchar(MAX), d varchar(MAX), referrer varchar(max), cookie varchar(max));"
+#            User: !Ref RedshiftUser
+#            Host: !GetAtt HPXRedshiftCluster.Endpoint.Address
+#            Database: !Sub
+#                - "${prefix}_${env}"
+#                - { env: !Ref Environment, prefix: !Ref Prefix }
+#            Password: !Ref RedshiftPassword
+#            Port: !GetAtt HPXRedshiftCluster.Endpoint.Port
 
     PixelServerCloudFrontOriginAccessId:
         Type: "AWS::CloudFront::CloudFrontOriginAccessIdentity"
@@ -457,6 +459,7 @@ Resources:
         VpcId: !Ref HPXRedshiftClusterVpc
 
     HPXRedshiftClusterVpcRoute:
+      DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
       Type: AWS::EC2::Route
       Properties:
         RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
@@ -520,6 +523,15 @@ Resources:
             FromPort: 5439
             ToPort: 5439
             IpProtocol: "TCP"
+          -
+            Description: "Allow all internal"
+            FromPort: -1
+            ToPort: -1
+            IpProtocol: "-1"
+            #SourceSecurityGroupId: !Ref HPXRedshiftClusterVpcSecurityGroup
+            SourceSecurityGroupName: !Sub
+              - "${prefix}-${env}-security-group"
+              - { env: !Ref Environment, prefix: !Ref Prefix }
         VpcId: !Ref HPXRedshiftClusterVpc
 
     HPXRedshiftClusterVpcSubnetRouteTableAssociation:
