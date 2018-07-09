@@ -28,7 +28,7 @@ exports.handler = function(event, context) {
               };
               response.send(event, context, response.FAILED);
               return;
-            return;
+            });
           } else {
             console.log("Success:", res.rows);
             client.end((err) => {
