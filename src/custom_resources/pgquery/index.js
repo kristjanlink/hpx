@@ -24,7 +24,12 @@ exports.handler = function(event, context) {
             console.log("Success:", res.rows);
             response.send(event, context, response.SUCCESS, { "Rows" : res.rows });
           }
-          client.end();
+          client.end((err) => {
+            console.log('client has disconnected');
+            if (err) {
+              console.log('error during disconnection', err.stack);
+            };
+          });
         });
       }
     });
