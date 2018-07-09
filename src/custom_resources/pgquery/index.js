@@ -2,6 +2,7 @@ var response = require('cfn-response');
 const { Client } = require('pg');
 
 exports.handler = function(event, context) {
+  context.callbackWaitsForEmptyEventLoop = false;
   if (event.RequestType == "Create" || event.RequestType == "Update") {
     var client = new Client({
       user: event.ResourceProperties.User,
@@ -14,26 +15,36 @@ exports.handler = function(event, context) {
       if (err) {
         console.log("Connection Error:", err, err.stack);
         response.send(event, context, response.FAILED);
+        return;
       } else {
         console.log("Connected:");
         client.query(event.ResourceProperties.Query, (err, res) => {
           if (err) {
             console.log("Error:", err, err.stack);
-            response.send(event, context, response.FAILED);
+            client.end((err) => {
+              console.log('client has disconnected');
+              if (err) {
+                console.log('error during disconnection', err.stack);
+              };
+              response.send(event, context, response.FAILED);
+              return;
+            return;
           } else {
             console.log("Success:", res.rows);
-            response.send(event, context, response.SUCCESS, { "Rows" : res.rows });
+            client.end((err) => {
+              console.log('client has disconnected');
+              if (err) {
+                console.log('error during disconnection', err.stack);
+              };
+              response.send(event, context, response.SUCCESS, { "Rows" : res.rows });
+              return;
+            });
           }
-          client.end((err) => {
-            console.log('client has disconnected');
-            if (err) {
-              console.log('error during disconnection', err.stack);
-            };
-          });
         });
       }
     });
   } else {
     response.send(event, context, response.SUCCESS, {});
+    return
   }
 };
