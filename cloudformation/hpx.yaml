@@ -531,6 +531,15 @@ Resources:
         RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
         SubnetId: !Ref HPXRedshiftClusterVpcSubnet
 
+    HPXRedshiftClusterVpcEndpoint:
+      Type: "AWS::EC2::VPCEndpoint"
+      Properties:
+        VpcId: !Ref HPXRedshiftClusterVpc
+        ServiceName: "com.amazonaws.${AWS::Region}.s3"
+        VpcEndpointType: "Gateway"
+        SubnetIds:
+          - !Ref HPXRedshiftClusterVpcSubnet
+
     HPXRedshiftCluster:
       DependsOn:
         - HPXRedshiftClusterVpcInternetGatewayAttachment
