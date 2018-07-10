@@ -16,7 +16,7 @@ Parameters:
         NoEcho: true
     RedshiftCidrBlock:
         Type: String
-        Default: "192.168.55.0/24"
+        Default: "192.168.25.0/24"
         #AllowedPattern: "^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.).*$" # can be tightened up later...
 
 Mappings:
@@ -222,7 +222,6 @@ Resources:
 
 
     PixelLogS3Bucket:
-        DependsOn: PixelLogLambda
         DependsOn: PixlLogLamdaPermission
         Type: "AWS::S3::Bucket"
         Properties:
@@ -532,8 +531,9 @@ Resources:
         SubnetId: !Ref HPXRedshiftClusterVpcSubnet
 
     HPXRedshiftCluster:
-      DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
-      DependsOn: HPXRedshiftClusterVpcSubnetRouteTableAssociation
+      DependsOn:
+        - HPXRedshiftClusterVpcInternetGatewayAttachment
+        - HPXRedshiftClusterVpcSubnetRouteTableAssociation
       Type: "AWS::Redshift::Cluster"
       Properties:
         DBName: !Sub
