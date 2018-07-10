@@ -537,7 +537,7 @@ Resources:
       Type: "AWS::EC2::VPCEndpoint"
       Properties:
         VpcId: !Ref HPXRedshiftClusterVpc
-        ServiceName: "com.amazonaws.${AWS::Region}.s3"
+        ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
         VpcEndpointType: "Gateway"
         RouteTableIds:
           - !Ref HPXRedshiftClusterVpcRouteTable
