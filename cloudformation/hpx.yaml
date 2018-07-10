@@ -102,8 +102,6 @@ Resources:
                     - sg-b17d3ace
                 SubnetIds:
                     - subnet-0c3ef675
-                    - subnet-24bc566f
-                    - subnet-f0e151aa
 
     CreatePixelsTable:
         DependsOn: HPXRedshiftCluster
