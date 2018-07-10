@@ -170,7 +170,9 @@ Resources:
                     #- subnet-f0e151aa
 
     CreatePixelsTable:
-        DependsOn: HPXRedshiftCluster
+        DependsOn:
+          - HPXRedshiftCluster
+          - HPXRedshiftClusterVpcEndpoint
         Type: Custom::PGQuery
         Properties:
             ServiceToken: !GetAtt PGQueryLambda.Arn
