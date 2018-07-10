@@ -16,7 +16,7 @@ Parameters:
         NoEcho: true
     RedshiftCidrBlock:
         Type: String
-        Default: "192.168.55.0/24"
+        Default: "192.168.25.0/24"
         #AllowedPattern: "^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.).*$" # can be tightened up later...
 
 Mappings:
@@ -160,12 +160,19 @@ Resources:
                     - { env: !Ref Environment }
             VpcConfig:
                 SecurityGroupIds:
-                    - sg-b17d3ace
+                    - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
+                    - !GetAtt HPXRedshiftClusterVpc.DefaultSecurityGroup
+                    #- sg-b17d3ace
                 SubnetIds:
-                    - subnet-0c3ef675
+                    - !Ref HPXRedshiftClusterVpcSubnet
+                    #- subnet-0c3ef675
+                    #- subnet-24bc566f
+                    #- subnet-f0e151aa
 
     CreatePixelsTable:
-        DependsOn: HPXRedshiftCluster
+        DependsOn:
+          - HPXRedshiftCluster
+          - HPXRedshiftClusterVpcEndpoint
         Type: Custom::PGQuery
         Properties:
             ServiceToken: !GetAtt PGQueryLambda.Arn
@@ -218,7 +225,6 @@ Resources:
 
 
     PixelLogS3Bucket:
-        DependsOn: PixelLogLambda
         DependsOn: PixlLogLamdaPermission
         Type: "AWS::S3::Bucket"
         Properties:
@@ -455,6 +461,7 @@ Resources:
         VpcId: !Ref HPXRedshiftClusterVpc
 
     HPXRedshiftClusterVpcRoute:
+      DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
       Type: AWS::EC2::Route
       Properties:
         RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
@@ -481,6 +488,7 @@ Resources:
           - "${prefix}-${env}-security-group"
           - { env: !Ref Environment, prefix: !Ref Prefix }
         GroupDescription: "Group to configure inbound rules for HPX Redshift Cluster"
+        VpcId: !Ref HPXRedshiftClusterVpc
         SecurityGroupIngress:
           -
             CidrIp: { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "Kinesis" ]}
@@ -518,7 +526,6 @@ Resources:
             FromPort: 5439
             ToPort: 5439
             IpProtocol: "TCP"
-        VpcId: !Ref HPXRedshiftClusterVpc
 
     HPXRedshiftClusterVpcSubnetRouteTableAssociation:
       Type: "AWS::EC2::SubnetRouteTableAssociation"
@@ -526,8 +533,19 @@ Resources:
         RouteTableId: !Ref HPXRedshiftClusterVpcRouteTable
         SubnetId: !Ref HPXRedshiftClusterVpcSubnet
 
+    HPXRedshiftClusterVpcEndpoint:
+      Type: "AWS::EC2::VPCEndpoint"
+      Properties:
+        VpcId: !Ref HPXRedshiftClusterVpc
+        ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+        VpcEndpointType: "Gateway"
+        RouteTableIds:
+          - !Ref HPXRedshiftClusterVpcRouteTable
+
     HPXRedshiftCluster:
-      DependsOn: HPXRedshiftClusterVpcInternetGatewayAttachment
+      DependsOn:
+        - HPXRedshiftClusterVpcInternetGatewayAttachment
+        - HPXRedshiftClusterVpcSubnetRouteTableAssociation
       Type: "AWS::Redshift::Cluster"
       Properties:
         DBName: !Sub
@@ -545,6 +563,7 @@ Resources:
         ClusterSubnetGroupName: !Ref HPXRedshiftClusterVpcSubnetGroup
         VpcSecurityGroupIds:
           - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
+          - !GetAtt HPXRedshiftClusterVpc.DefaultSecurityGroup
 
     KinesisCloudWatchLogGroup:
       Type: "AWS::Logs::LogGroup"
