@@ -161,6 +161,7 @@ Resources:
             VpcConfig:
                 SecurityGroupIds:
                     - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
+                    - !GetAtt HPXRedshiftClusterVpc.DefaultSecurityGroup
                     #- sg-b17d3ace
                 SubnetIds:
                     - !Ref HPXRedshiftClusterVpcSubnet

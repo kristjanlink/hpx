@@ -1,7 +1,11 @@
 var response = require('cfn-response');
 const { Client } = require('pg');
+const dns = require('dns');
 
 exports.handler = function(event, context) {
+  dns.lookup(event.ResourceProperties.Host, (err, address, family) => {
+    console.log("Host address: %j Family: IPv%s", address, family);
+  });
   if (event.RequestType == "Create" || event.RequestType == "Update") {
     var client = new Client({
       user: event.ResourceProperties.User,
