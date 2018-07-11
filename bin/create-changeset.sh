@@ -15,7 +15,6 @@ if [ -z $VPC_CIDR ]; then
   exit
 fi
 
-
 echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION, VPC_CIDR=$VPC_CIDR"
 echo "Creating changeset for stack hpx-$ENVIRONMENT-$REGION"
 

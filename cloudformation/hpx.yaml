@@ -16,7 +16,6 @@ Parameters:
         NoEcho: true
     RedshiftCidrBlock:
         Type: String
-        Default: "192.168.22.0/24"
 
 Mappings:
   RegionMap:
