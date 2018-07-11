@@ -16,7 +16,6 @@ Parameters:
         NoEcho: true
     RedshiftCidrBlock:
         Type: String
-        AllowedPattern: "^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.).*$" # can be tightened up later...
 
 Mappings:
   RegionMap:
