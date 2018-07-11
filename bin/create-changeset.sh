@@ -10,6 +10,11 @@ if [ -z $REDSHIFT_PASSWORD ]; then
   exit
 fi
 
+if [ -z $VPC_CIDR ]; then
+  echo "You must set environment variable VPC_CIDR to proceed!"
+  exit
+fi
+
 
 echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION"
 echo "Creating changeset for stack hpx-$ENVIRONMENT-$REGION"
@@ -30,3 +35,5 @@ ParameterKey=\"Environment\",\
 ParameterValue=\"$ENVIRONMENT\" \
 ParameterKey=\"RedshiftPassword\",\
 ParameterValue=\"$REDSHIFT_PASSWORD\"\
+ParameterKey=\"VpcCidr\",\
+ParameterValue=\"$VPC_CIDR\"\
