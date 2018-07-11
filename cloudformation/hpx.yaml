@@ -160,12 +160,8 @@ Resources:
                 SecurityGroupIds:
                     - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
                     - !GetAtt HPXRedshiftClusterVpc.DefaultSecurityGroup
-                    #- sg-b17d3ace
                 SubnetIds:
                     - !Ref HPXRedshiftClusterVpcSubnet
-                    #- subnet-0c3ef675
-                    #- subnet-24bc566f
-                    #- subnet-f0e151aa
 
     CreatePixelsTable:
         DependsOn:
@@ -553,7 +549,7 @@ Resources:
         MasterUserPassword: !Ref RedshiftPassword
         NodeType: "dc2.large"
         ClusterIdentifier: !Sub
-          - "${prefix}-${env}-2"
+          - "${prefix}-${env}"
           - { env: !Ref Environment, prefix: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
