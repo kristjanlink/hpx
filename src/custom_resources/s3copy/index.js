@@ -17,6 +17,16 @@ exports.handler = function(event, context) {
           response.send(event, context, response.SUCCESS, data)
         }});
   } else {
-    response.send(event, context, response.SUCCESS, {});
+    var request = s3.deleteObject( {
+      "Bucket": event.ResourceProperties.DestinationBucket,
+      "Key": event.ResourceProperties.DestinationKey
+    }, function(err, data) {
+        if (err) {
+          console.log("Error:", err, err.stack);
+          response.send(event, context, response.FAILED)
+        } else {
+          console.log("Success:", data);
+          response.send(event, context, response.SUCCESS, data)
+        }});
   }
 };

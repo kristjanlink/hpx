@@ -10,12 +10,7 @@ if [ -z $REDSHIFT_PASSWORD ]; then
   exit
 fi
 
-if [ -z $VPC_CIDR ]; then
-  echo "You must set environment variable VPC_CIDR to proceed!"
-  exit
-fi
-
-echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION, VPC_CIDR=$VPC_CIDR"
+echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION"
 echo "Creating changeset for stack hpx-$ENVIRONMENT-$REGION"
 
 #aws cloudformation create-change-set \
@@ -32,7 +27,5 @@ aws cloudformation create-change-set \
   --parameters \
 ParameterKey=\"Environment\",\
 ParameterValue=\"$ENVIRONMENT\" \
-ParameterKey=\"VpcCidrBlock\",\
-ParameterValue=\"$VPC_CIDR\" \
 ParameterKey=\"RedshiftPassword\",\
 ParameterValue=\"$REDSHIFT_PASSWORD\"\

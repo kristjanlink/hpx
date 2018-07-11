@@ -16,6 +16,7 @@ Parameters:
         NoEcho: true
     VpcCidrBlock:
         Type: String
+        Default: 192.168.48.0/24
 
 Mappings:
   RegionMap:
@@ -110,6 +111,7 @@ Resources:
                                     - s3:GetObject
                                     - s3:GetObjectVersion
                                     - s3:PutObject
+                                    - s3:DeleteObject
                                 Resource: arn:aws:s3:::*
                             -
                                 Sid: "AccessVPCs"
@@ -189,6 +191,7 @@ Resources:
 
     PixelServerS3Bucket:
         Type: "AWS::S3::Bucket"
+        DeletionPolicy: Retain
         Properties:
             BucketName: !Sub
                 - "${prefix}-${env}-srv-${AWS::Region}-${AWS::AccountId}"
@@ -221,6 +224,7 @@ Resources:
     PixelLogS3Bucket:
         DependsOn: PixlLogLamdaPermission
         Type: "AWS::S3::Bucket"
+        DeletionPolicy: Retain
         Properties:
             BucketName: !Sub
                 - "${prefix}-${env}-log-${AWS::Region}-${AWS::AccountId}"
