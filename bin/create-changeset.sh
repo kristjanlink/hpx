@@ -16,7 +16,7 @@ if [ -z $VPC_CIDR ]; then
 fi
 
 
-echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION"
+echo "BRANCH=$BRANCH, ENVIRONMENT=$ENVIRONMENT, REGION=$REGION, VPC_CIDR=$VPC_CIDR"
 echo "Creating changeset for stack hpx-$ENVIRONMENT-$REGION"
 
 #aws cloudformation create-change-set \
@@ -33,7 +33,7 @@ aws cloudformation create-change-set \
   --parameters \
 ParameterKey=\"Environment\",\
 ParameterValue=\"$ENVIRONMENT\" \
+ParameterKey=\"RedshiftCidrBlock\",\
+ParameterValue=\"$VPC_CIDR\" \
 ParameterKey=\"RedshiftPassword\",\
 ParameterValue=\"$REDSHIFT_PASSWORD\"\
-ParameterKey=\"VpcCidr\",\
-ParameterValue=\"$VPC_CIDR\"\
