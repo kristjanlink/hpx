@@ -617,6 +617,7 @@ Resources:
 
     KinesisFirehoseIntermediateS3Bucket:
         Type: "AWS::S3::Bucket"
+        DeletionPolicy: Retain
         Properties:
           BucketName: !Sub
             - "${prefix}-${env}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
