@@ -32,7 +32,7 @@ aws cloudformation create-change-set \
   --parameters \
 ParameterKey=\"Environment\",\
 ParameterValue=\"$ENVIRONMENT\" \
-ParameterKey=\"RedshiftCidrBlock\",\
+ParameterKey=\"VpcCidrBlock\",\
 ParameterValue=\"$VPC_CIDR\" \
 ParameterKey=\"RedshiftPassword\",\
 ParameterValue=\"$REDSHIFT_PASSWORD\"\

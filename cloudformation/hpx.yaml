@@ -14,7 +14,7 @@ Parameters:
     RedshiftPassword:
         Type: String
         NoEcho: true
-    RedshiftCidrBlock:
+    VpcCidrBlock:
         Type: String
 
 Mappings:
@@ -434,7 +434,7 @@ Resources:
     HPXRedshiftClusterVpc:
       Type: "AWS::EC2::VPC"
       Properties:
-        CidrBlock: !Ref RedshiftCidrBlock
+        CidrBlock: !Ref VpcCidrBlock
         EnableDnsSupport: true
         EnableDnsHostnames: true
         Tags:
@@ -469,7 +469,7 @@ Resources:
     HPXRedshiftClusterVpcSubnet:
       Type: "AWS::EC2::Subnet"
       Properties:
-        CidrBlock: !Ref RedshiftCidrBlock
+        CidrBlock: !Ref VpcCidrBlock
         VpcId: !Ref HPXRedshiftClusterVpc
 
     HPXRedshiftClusterVpcSubnetGroup:
