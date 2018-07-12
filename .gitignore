@@ -1,3 +1,6 @@
+# Env
+/.env
+
 # Dist
 dist
 lambda/pgquery.zip
