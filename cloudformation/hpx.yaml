@@ -16,7 +16,7 @@ Parameters:
         NoEcho: true
     VpcCidrBlock:
         Type: String
-        Default: 192.168.48.0/24
+        Default: 192.168.49.0/24
 
 Mappings:
   RegionMap:
@@ -617,7 +617,6 @@ Resources:
 
     KinesisFirehoseIntermediateS3Bucket:
         Type: "AWS::S3::Bucket"
-        DeletionPolicy: Retain
         Properties:
           BucketName: !Sub
             - "${prefix}-${env}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
@@ -637,7 +636,7 @@ Resources:
                     - { env: !Ref Environment }
 
     CleanupKinesisFirehoseIntermediateS3Bucket:
-        Type: Custom::CleanupS3Bucket
-        Properties:
-            ServiceToken: !GetAtt CleanupS3BucketLambda.Arn
-            Bucket: !Ref KindesisFirehoseIntermediateS3Bucket
+      Type: Custom::CleanupS3Bucket
+      Properties:
+        ServiceToken: !GetAtt CleanupS3BucketLambda.Arn
+        Bucket: !Ref KinesisFirehoseIntermediateS3Bucket
