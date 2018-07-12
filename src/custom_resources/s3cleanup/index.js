@@ -4,7 +4,7 @@ var s3 = new aws.S3();
 
 var allKeys = [];
 function listAllKeys(s3bucket, token, cb) {
-  var opts = { Bucket: s3bucket, MaxKeys: 2 };
+  var opts = { Bucket: s3bucket };
   if(token) opts.ContinuationToken = token;
 
   s3.listObjectsV2(opts, function(err, data) {
@@ -22,7 +22,7 @@ function listAllKeys(s3bucket, token, cb) {
 }
 
 exports.handler = function(event, context) {
-  if (true) { //event.RequestType == "Delete") {
+  if (event.RequestType == "Delete") {
     listAllKeys(event.ResourceProperties.Bucket, false, function(err, data) {
       if (err) {
         console.log("Error:", err, err.stack);
