@@ -18,13 +18,14 @@ exports.handler = function(event, context) {
           truncated = data.IsTruncated;
           console.log("Listed keys for bucket!", truncated);
           let objects = [];
-          for (let o in data.Contents) {
-            console.log("Found key to delete:", o.Key);
-            objects.push( { "Key": o.Key } );
-          }
+          console.log("Contents:", data.Contents);
+          data.Contents.forEach( function(obj) {
+            console.log("Found key to delete:", obj.Key);
+            objects.push( { "Key": obj.Key } );
+          });
           let del_request = s3.deleteObjects( {
             "Bucket": event.ResourceProperties.Bucket,
-            "Objects": objects
+            "Delete": { "Objects": objects }
           }, function(err, data) {
             if (err) {
               error = true;
