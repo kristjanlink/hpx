@@ -2,7 +2,7 @@
 set -u
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTNAME=`basename "${BASH_SOURCE[0]}"`
-HPXDIR="$( dirname "$(dirname "$SCRIPTDIR" )" )"
+HPXDIR="$(dirname "$SCRIPTDIR" )"
 
 RELEASEBUCKET=${RELEASEBUCKET:-hpx-release-us-west-2}
 DEVBUCKET=${DEVBUCKET:-hpx-dev-us-west-2}
@@ -68,12 +68,11 @@ dist() {
       [ -z $VERSION ] && err "Could not determine development BRANCH!"
       ;;
   esac
-  aws s3 sync $HPXDIR s3://$DISTBUCKET/$VERSION \
+  aws s3 sync $HPXDIR/dist s3://$DISTBUCKET/$VERSION \
     --delete \
     --exclude .git/\* \
     --exclude .gitignore \
     --exclude .env \
-    --exclude src/\* \
     $DRYRUN
 
   echo "$VERSION" | aws s3 cp - s3://$DISTBUCKET/LATEST $DRYRUN

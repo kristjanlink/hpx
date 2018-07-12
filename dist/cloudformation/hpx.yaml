@@ -1,13 +1,13 @@
 Parameters:
-    Environment:
-        Type: String
-        AllowedPattern: "^[a-zA-Z0-9]+$"
     Prefix:
         Type: String
         Default: "hpx"
+        AllowedPattern: "^[a-zA-Z0-9]+$"
     DistS3Bucket:
         Type: String
-        Default: "hpx-code"
+        Default: "hpx-release-us-west-2"
+    DistS3Root:
+        Type: String
     RedshiftUser:
         Type: String
         Default: "turbo"
@@ -130,8 +130,8 @@ Resources:
             Code:
                 S3Bucket: !Ref DistS3Bucket
                 S3Key: !Sub
-                    - "${env}/lambda/s3copy.zip"
-                    - { env: !Ref Environment }
+                    - "${root}/lambda/s3copy.zip"
+                    - { root: !Ref DistS3Root }
 
     CopyPixelToPixelServer:
         Type: Custom::CopyS3Object
@@ -139,8 +139,8 @@ Resources:
             ServiceToken: !GetAtt CopyS3ObjectLambda.Arn
             SourceBucket: !Ref DistS3Bucket
             SourceKey: !Sub
-                - "${env}/s3/pixelserver/1x1.gif"
-                - { env: !Ref Environment }
+                - "${root}/s3/pixelserver/1x1.gif"
+                - { root: !Ref DistS3Root }
             DestinationBucket: !Ref PixelServerS3Bucket
             DestinationKey: "1x1.gif"
 
@@ -154,8 +154,8 @@ Resources:
             Code:
                 S3Bucket: !Ref DistS3Bucket
                 S3Key: !Sub
-                    - "${env}/lambda/pgquery.zip"
-                    - { env: !Ref Environment }
+                    - "${root}/lambda/pgquery.zip"
+                    - { root: !Ref DistS3Root }
             VpcConfig:
                 SecurityGroupIds:
                     - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
@@ -173,9 +173,7 @@ Resources:
             Query: "create table if not exists pixels(id bigint identity, request_time timestamp, ip varchar(50), useragent varchar(MAX), url varchar(MAX), a varchar(MAX), b varchar(MAX), c varchar(MAX), d varchar(MAX), referrer varchar(max), cookie varchar(max));"
             User: !Ref RedshiftUser
             Host: !GetAtt HPXRedshiftCluster.Endpoint.Address
-            Database: !Sub
-                - "${prefix}_${env}"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+            Database: !Ref Prefix
             Password: !Ref RedshiftPassword
             Port: !GetAtt HPXRedshiftCluster.Endpoint.Port
 
@@ -184,15 +182,15 @@ Resources:
         Properties:
               CloudFrontOriginAccessIdentityConfig:
                   Comment: !Sub
-                      - "${prefix}-${env}-srv"
-                      - { env: !Ref Environment, prefix: !Ref Prefix }
+                      - "${prefix}-srv"
+                      - { prefix: !Ref Prefix }
 
     PixelServerS3Bucket:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "${prefix}-${env}-srv-${AWS::Region}-${AWS::AccountId}"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+                - "${prefix}-srv-${AWS::Region}-${AWS::AccountId}"
+                - { prefix: !Ref Prefix }
             AccessControl: PublicRead
             WebsiteConfiguration:
                 IndexDocument: "1x1.gif"
@@ -223,8 +221,8 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
             BucketName: !Sub
-                - "${prefix}-${env}-log-${AWS::Region}-${AWS::AccountId}"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+                - "${prefix}-log-${AWS::Region}-${AWS::AccountId}"
+                - { prefix: !Ref Prefix }
             AccessControl: "Private"
             NotificationConfiguration:
                 LambdaConfigurations:
@@ -268,8 +266,8 @@ Resources:
         Type: "AWS::IAM::Role"
         Properties:
             RoleName: !Sub
-                - "${prefix}-${env}-pixellog-lambda-role"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+                - "${prefix}-pixellog-lambda-role"
+                - { prefix: !Ref Prefix }
             AssumeRolePolicyDocument:
                   Version: "2012-10-17"
                   Statement:
@@ -284,8 +282,8 @@ Resources:
             Policies:
               -
                 PolicyName: !Sub
-                    - "${prefix}-${env}-pixellog-lambda-policy"
-                    - { env: !Ref Environment, prefix: !Ref Prefix }
+                    - "${prefix}-pixellog-lambda-policy"
+                    - { prefix: !Ref Prefix }
                 PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
@@ -310,8 +308,8 @@ Resources:
         Type: "AWS::IAM::Role"
         Properties:
             RoleName: !Sub
-                - "${prefix}-${env}-firehose-delivery-role"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+                - "${prefix}-firehose-delivery-role"
+                - { prefix: !Ref Prefix }
             AssumeRolePolicyDocument:
                 Version: '2012-10-17'
                 Statement:
@@ -325,8 +323,8 @@ Resources:
             Policies:
               -
                 PolicyName: !Sub
-                    - "${prefix}-${env}-firehose-delivery-policy"
-                    - { env: !Ref Environment, prefix: !Ref Prefix }
+                    - "${prefix}-firehose-delivery-policy"
+                    - { prefix: !Ref Prefix }
                 PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
@@ -356,15 +354,15 @@ Resources:
                                     kms:ViaService: !Sub ["kinesis.${AWS::Region}.${AWS::URLSuffix}", {}]
                                 StringLike:
                                     kms:EncryptionContext:aws:kinesis:arn: !Sub
-                                      - "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${prefix}-${env}-pixellog-delivery-stream"
-                                      - { env: !Ref Environment, prefix: !Ref Prefix }
+                                      - "arn:aws:kinesis:${AWS::Region}:${AWS::AccountId}:stream/${prefix}-pixellog-delivery-stream"
+                                      - { prefix: !Ref Prefix }
 
     RedshiftAWSServiceRole:
         Type: "AWS::IAM::Role"
         Properties:
             RoleName: !Sub
-                - "${prefix}-${env}-redshift-aws-service-role"
-                - { env: !Ref Environment, prefix: !Ref Prefix }
+                - "${prefix}-redshift-aws-service-role"
+                - { prefix: !Ref Prefix }
             AssumeRolePolicyDocument:
                 Version: '2012-10-17'
                 Statement:
@@ -378,8 +376,8 @@ Resources:
             Policies:
               -
                 PolicyName: !Sub
-                    - "${prefix}-${env}-redshift-aws-service-policy"
-                    - { env: !Ref Environment, prefix: !Ref Prefix }
+                    - "${prefix}-redshift-aws-service-policy"
+                    - { prefix: !Ref Prefix }
                 PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
@@ -403,8 +401,8 @@ Resources:
             Code:
                 S3Bucket: !Ref DistS3Bucket
                 S3Key: !Sub
-                    - "${env}/lambda/hpx-cloudfront-logs-production.zip"
-                    - { env: !Ref Environment }
+                    - "${root}/lambda/hpx-cloudfront-logs-production.zip"
+                    - { root: !Ref DistS3Root }
             Handler: "index.handler"
             Role: !GetAtt PixelLogLambdaRole.Arn
             Runtime: "nodejs8.10"
@@ -437,8 +435,8 @@ Resources:
           -
             Key: "Name"
             Value: !Sub
-              - "${prefix}-${env}-vpc"
-              - { env: !Ref Environment, prefix: !Ref Prefix }
+              - "${prefix}-vpc"
+              - { prefix: !Ref Prefix }
 
     HPXRedshiftClusterVpcInternetGateway:
       Type: "AWS::EC2::InternetGateway"
@@ -479,8 +477,8 @@ Resources:
       Type: "AWS::EC2::SecurityGroup"
       Properties:
         GroupName: !Sub
-          - "${prefix}-${env}-security-group"
-          - { env: !Ref Environment, prefix: !Ref Prefix }
+          - "${prefix}-security-group"
+          - { prefix: !Ref Prefix }
         GroupDescription: "Group to configure inbound rules for HPX Redshift Cluster"
         VpcId: !Ref HPXRedshiftClusterVpc
         SecurityGroupIngress:
@@ -542,15 +540,11 @@ Resources:
         - HPXRedshiftClusterVpcSubnetRouteTableAssociation
       Type: "AWS::Redshift::Cluster"
       Properties:
-        DBName: !Sub
-          - "${prefix}_${env}"
-          - { env: !Ref Environment, prefix: !Ref Prefix }
+        DBName: !Ref Prefix
         MasterUsername: !Ref RedshiftUser
         MasterUserPassword: !Ref RedshiftPassword
         NodeType: "dc2.large"
-        ClusterIdentifier: !Sub
-          - "${prefix}-${env}"
-          - { env: !Ref Environment, prefix: !Ref Prefix }
+        ClusterIdentifier: !Ref Prefix }
         ClusterType: "single-node"
         IamRoles:
           - !GetAtt RedshiftAWSServiceRole.Arn
@@ -563,8 +557,8 @@ Resources:
       Type: "AWS::Logs::LogGroup"
       Properties:
         LogGroupName: !Sub
-          - "/aws/kinesisfirehose/${prefix}-${env}-pixellog-delivery-stream"
-          - { env: !Ref Environment, prefix: !Ref Prefix }
+          - "/aws/kinesisfirehose/${prefix}-pixellog-delivery-stream"
+          - { prefix: !Ref Prefix }
 
     KinesisCloudWatchS3DeliveryLogStream:
       Type: "AWS::Logs::LogStream"
@@ -582,12 +576,12 @@ Resources:
       Type: "AWS::KinesisFirehose::DeliveryStream"
       Properties:
         DeliveryStreamName: !Sub
-          - "${prefix}-${env}-pixellog-delivery-stream"
-          - { env: !Ref Environment, prefix: !Ref Prefix }
+          - "${prefix}-pixellog-delivery-stream"
+          - { prefix: !Ref Prefix }
         RedshiftDestinationConfiguration:
           ClusterJDBCURL: !Sub
-            - "jdbc:redshift://${endpoint}:${port}/${prefix}_${env}"
-            - { endpoint: !GetAtt HPXRedshiftCluster.Endpoint.Address, port: !GetAtt HPXRedshiftCluster.Endpoint.Port, env: !Ref Environment, prefix: !Ref Prefix }
+            - "jdbc:redshift://${endpoint}:${port}/${prefix}"
+            - { endpoint: !GetAtt HPXRedshiftCluster.Endpoint.Address, port: !GetAtt HPXRedshiftCluster.Endpoint.Port, prefix: !Ref Prefix }
           CopyCommand:
             CopyOptions: "DELIMITER '\\t' TIMEFORMAT 'auto'"
             DataTableColumns: "request_time, ip, useragent, url, a, b, c, d, referrer, cookie"
@@ -615,6 +609,6 @@ Resources:
         Type: "AWS::S3::Bucket"
         Properties:
           BucketName: !Sub
-            - "${prefix}-${env}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
-            - { env: !Ref Environment, prefix: !Ref Prefix }
+            - "${prefix}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
+            - { prefix: !Ref Prefix }
           AccessControl: "Private"
