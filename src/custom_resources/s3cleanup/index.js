@@ -30,11 +30,11 @@ exports.handler = function(event, context) {
       } else {
         var objects = [];
         data.forEach( function(obj) {
-          objects.push( { "Key": obj.Key } );
+          objects.push( { Key: obj.Key } );
         });
         let del_request = s3.deleteObjects( {
-          "Bucket": event.ResourceProperties.Bucket,
-          "Delete": { "Objects": objects }
+          Bucket: event.ResourceProperties.Bucket,
+          Delete: { Objects: objects }
         }, function(err, data) {
           if (err) {
             console.log("Error:", err, err.stack);
