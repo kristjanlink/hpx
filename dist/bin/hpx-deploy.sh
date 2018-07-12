@@ -3,12 +3,7 @@ set -u
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTNAME=`basename "${BASH_SOURCE[0]}"`
 LUSER=`whoami`
-
-RELEASEBUCKET=${RELEASEBUCKET:-hpx-release-us-west-2}
-DEVBUCKET=${DEVBUCKET:-hpx-dev-us-west-2}
-
-[ -z `which aws` ] && err "AWS Cli not found!"
-REGION=`aws configure get region`
+RELEASEBUCKET=${RELEASEBUCKET:-"hpx-release-us-west-2"}
 
 usage() {
     cat 1>&2 <<EOF
@@ -35,8 +30,9 @@ OPTIONS:
                                 created for review before execution.
 
 ENVIRONMENT VARIABLES:
-  VPC_CIDR          (required)  The IP block to use when creating VPC resources.
+  VPC_CIDR                      The IP block to use when creating VPC resources.
                                 Example: '10.0.55/24' or 'fc00:100::/32'
+                                Defaults to 172.16.0.0/16
 
   REDSHIFT_PASSWORD (required)  The Redshift master password to set.
 
@@ -49,6 +45,11 @@ EOF
 }
 
 main() {
+  validate_environment_variables
+
+  [ -z `which aws` ] && err "AWS Cli not found!"
+  REGION=`aws configure get region`
+
   while [[ $# > 0 ]]; do
     case "$1" in
       -V|--version)
@@ -80,41 +81,49 @@ main() {
   DISTS3BUCKET=`s3uri_bucket $DIST`
   DISTS3ROOT=`s3uri_key $DIST`
 
-  STACKNAME=${STACKNAME:-"hpx-$REGION"}
-  validate_stackname $STACKNAME
-
   PREFIX=${PREFIX:-"hpx"}
   validate_prefix $PREFIX
+
+  STACKNAME=${STACKNAME:-"$PREFIX-$REGION"}
+  validate_stackname $STACKNAME
 
   REDSHIFT_USER=${REDSHIFT_USER:-"hpx"}
   validate_redshift_user $REDSHIFT_USER
 
+  VPC_CIDR=${VPC_CIDR:-"172.31.0.0/16"}
+  validate_ipv4_cidr $VPC_CIDR
+
+  PARAMETERS=`cat <<-EOF
+  ParameterKey="Prefix",ParameterValue="$PREFIX"
+  ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
+  ParameterKey="DistS3Root",ParameterValue="$DISTS3ROOT"
+  ParameterKey="RedshiftUser",ParameterValue="$REDSHIFT_USER"
+  ParameterKey="RedshiftPassword",ParameterValue="$REDSHIFT_PASSWORD"
+  ParameterKey="VpcCidrBlock",ParameterValue="$VPC_CIDR"
+EOF
+`
   if ! aws cloudformation describe-stacks --stack-name $STACKNAME > /dev/null 2>&1; then
-    printf "Creating new stack: $STACKNAME"
-    AWSCOMMAND=create-stack
+    info "Creating new stack: $STACKNAME"
+    aws cloudformation create-stack \
+      --capabilities CAPABILITY_NAMED_IAM \
+      --stack-name "$STACKNAME" \
+      --template-url "`s3uri_to_s3url $DIST/cloudformation/hpx.yaml`" \
+      --parameters $PARAMETERS
   else
-    printf "Creating changeset for existing stack: $STACKNAME"
-    AWSCOMMAND=create-change-set
+    info "Creating changeset for existing stack: $STACKNAME"
+    aws cloudformation create-change-set \
+      --capabilities CAPABILITY_NAMED_IAM \
+      --stack-name "$STACKNAME" \
+      --template-url "`s3uri_to_s3url $DIST/cloudformation/hpx.yaml`" \
+      --change-set-name "$PREFIX-changeset-$LUSER-$REGION" \
+      --parameters $PARAMETERS
+
+    if [ ${EXECUTE_CHANGESET:-FALSE} = TRUE ]; then
+      aws cloudformation execute-change-set \
+        --change-set-name "$PREFIX-changeset-$LUSER-$REGION"
+    fi
   fi
 
-  echo aws cloudformation $AWSCOMMAND \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --stack-name $STACKNAME \
-    --template-url "$DIST/cloudformation/hpx.yml" \
-    --change-set-name $PREFIX-changeset-$LUSER-$REGION \
-    --parameters \
-  ParameterKey=\"Prefix\",\
-  ParameterValue=\"$PREFIX\" \
-  ParameterKey=\"DistS3Bucket\",\
-  ParameterValue=\"$DISTS3BUCKET\" \
-  ParameterKey=\"DistS3Root\",\
-  ParameterValue=\"$DISTS3ROOT\" \
-  ParameterKey=\"RedshiftUser\",\
-  ParameterValue=\"$REDSHIFT_USER\"
-  ParameterKey=\"RedshiftPassword\",\
-  ParameterValue=\"$REDSHIFT_PASSWORD\"
-  ParameterKey=\"VpcCidrBlock\",\
-  ParameterValue=\"$VPC_CIDR\"
 
 }
 
@@ -127,17 +136,32 @@ validate_version() {
 }
 
 validate_stackname() {
-  [ -z $1 ] && err "Stack name must be set!"
-  [[ ! $1 =~ ^[a-zA-Z0-9.\-_]{1,255}$ ]] && err "Invalid stack name ($1). Stackname must match ^[a-zA-Z0-9.\-_]{1,255}$"
+  [ -z "$1" ] && err "Stack name must be set!"
+  [[ ! "$1" =~ ^[a-zA-Z0-9._\-]{1,255}$ ]] && err "Invalid stack name ($1). Stackname must match ^[a-zA-Z0-9._\-]{1,255}$"
 }
 
 validate_s3uri() {
-  [[ ! $1 =~ ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$ ]] && err "Invalid S3URI ($1). S3URI must match ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$"
-  ! aws s3 ls $1 2>&1 >/dev/null && err "Cannot access S3URI ($1)"
+  [[ ! "$1" =~ ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$ ]] && err "Invalid S3URI ($1). S3URI must match ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$"
+  ! aws s3 ls "$1" 2>&1 >/dev/null && err "Cannot access S3URI ($1)"
+}
+
+s3uri_to_s3url() {
+  local awsregion=${REGION:-`aws configure get region`}
+  printf "https://s3-${awsregion}.amazonaws.com/${1:5}"
 }
 
 validate_prefix() {
-  [[ ! $1 =~ ^[a-zA-Z0-9]{1,16}$ ]] && err "Invalid prefix ($1). Prefix must match ^[a-zA-Z0-9]{1,16}$"
+  [[ ! "$1" =~ ^[a-zA-Z0-9]{1,16}$ ]] && err "Invalid prefix ($1). Prefix must match ^[a-zA-Z0-9]{1,16}$"
+}
+
+validate_redshift_user() {
+  [ -z "$1" ] && err "Redshift user must be set!"
+  [[ ! "$1" =~ ^[a-z]{1}[a-z0-9]{0,127}$ ]] && err "Invalid redshift user ($1). Redshift user must match ^[a-z]{1}[a-z0-9]{0,127}$"
+}
+
+validate_ipv4_cidr() {
+  [[ ! "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$ ]] && \
+  err "Invalid CIDR ($1)"
 }
 
 s3uri_bucket() {
@@ -153,16 +177,20 @@ s3uri_key() {
 }
 
 validate_environment_variables() {
-  REQUIRED=(REDSHIFT_PASSWORD VPC_CIDR)
+  REQUIRED=(REDSHIFT_PASSWORD)
   for envvar in ${REQUIRED[@]}; do
-    if [ -z ${!envvar} ]; then
+    if [ -z "${!envvar:-}" ]; then
       err "Environment variable ${envvar} must be set!"
     fi
   done
 }
 
+info() {
+  printf "[${SCRIPTNAME}] INFO: $1\n"
+}
+
 err() {
-  printf "[${SCRIPTNAME}] ERROR: ${1:-Unknown Error!}\n\n"
+  printf "[${SCRIPTNAME}] ERROR: ${1:-Unknown Error!}\n"
   usage
   exit ${2:--1}
 }

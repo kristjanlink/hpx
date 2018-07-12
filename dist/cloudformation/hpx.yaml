@@ -544,7 +544,7 @@ Resources:
         MasterUsername: !Ref RedshiftUser
         MasterUserPassword: !Ref RedshiftPassword
         NodeType: "dc2.large"
-        ClusterIdentifier: !Ref Prefix }
+        ClusterIdentifier: !Ref Prefix
         ClusterType: "single-node"
         IamRoles:
           - !GetAtt RedshiftAWSServiceRole.Arn

@@ -4,12 +4,9 @@ SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTNAME=`basename "${BASH_SOURCE[0]}"`
 HPXDIR="$(dirname "$SCRIPTDIR" )"
 
-RELEASEBUCKET=${RELEASEBUCKET:-hpx-release-us-west-2}
-DEVBUCKET=${DEVBUCKET:-hpx-dev-us-west-2}
+RELEASEBUCKET=${RELEASEBUCKET:-"hpx-release-us-west-2"}
+DEVBUCKET=${DEVBUCKET:-"hpx-dev-us-west-2"}
 DRYRUN=${DRYRUN:+--dryrun}
-
-[ -z `which aws` ] && err "AWS Cli not found!"
-REGION=`aws configure get region`
 
 usage() {
     cat 1>&2 <<EOF
@@ -19,9 +16,9 @@ USAGE:
   hpx [package|dist|help] [OPTIONS]
 
 COMMANDS:
-  package                 build and package the source directories
-  dist                    upload packaged files to S3
-  help                    print this message
+  pack, package           Build and package the source directories
+  dist                    Upload packaged files to S3
+  help                    Print this message
 
 OPTIONS:
   -r,--release <version>  Sets the release version for packaging. If set,
@@ -32,9 +29,12 @@ EOF
 }
 
 main() {
+  [ -z `which aws` ] && err "AWS Cli not found!"
+  REGION=`aws configure get region`
+
   SUBCOMMAND=${1:-help}; shift
   case "$SUBCOMMAND" in
-    package)
+    pack|package)
       package $@
       ;;
     dist)
@@ -68,14 +68,18 @@ dist() {
       [ -z $VERSION ] && err "Could not determine development BRANCH!"
       ;;
   esac
+
+  info "Uploading to s3://$DISTBUCKET/$VERSION"
   aws s3 sync $HPXDIR/dist s3://$DISTBUCKET/$VERSION \
     --delete \
     --exclude .git/\* \
     --exclude .gitignore \
     --exclude .env \
     $DRYRUN
+}
 
-  echo "$VERSION" | aws s3 cp - s3://$DISTBUCKET/LATEST $DRYRUN
+latest_version() {
+  aws s3 cp s3://$RELEASEBUCKET/LATEST - 2> /dev/null
 }
 
 validate_version() {
@@ -83,8 +87,12 @@ validate_version() {
   [[ ! $1 =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]] && err "Version must match format #.#<.#>!"
 }
 
+info() {
+  printf "[${SCRIPTNAME}] INFO: $1\n"
+}
+
 err() {
-  echo "${SCRIPTNAME}: ${1:-Unknown Error!}"
+  printf "[${SCRIPTNAME}] ERROR: ${1:-Unknown Error!}\n\n"
   usage
   exit ${2:--1}
 }
