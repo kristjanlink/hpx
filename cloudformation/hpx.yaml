@@ -16,7 +16,7 @@ Parameters:
         NoEcho: true
     VpcCidrBlock:
         Type: String
-        Default: 192.168.49.0/24
+        Default: 192.168.48.0/24
 
 Mappings:
   RegionMap:
