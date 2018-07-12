@@ -18,8 +18,8 @@ exports.handler = function(event, context) {
           truncated = data.IsTruncated;
           for (let o in data.Contents) {
             let del_request = s3.deleteObject( {
-              "Bucket": blah,
-              "Key": blah
+              "Bucket": event.ResourceProperties.Bucket,
+              "Key": o.Key
             }, function(err, data) {
               if (err) {
                 error = true;
@@ -28,8 +28,10 @@ exports.handler = function(event, context) {
               } else {
                 console.log("Successful delete:", data);
               }
-          }});
-        }});
+            });
+          }
+        }
+      });
       if (!error) {
         console.log("Done cleaning up bucket:", event.ResourceProperties.Bucket);
         response.send(event, context, response.SUCCESS, {})

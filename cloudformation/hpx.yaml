@@ -626,14 +626,14 @@ Resources:
     CleanupS3BucketLambda:
       Type: AWS::Lambda::Function
       Properties:
-            Handler: index.handler
-            Role: !GetAtt CustomResourcesRole.Arn
-            Runtime: nodejs6.10
-            Code:
-                S3Bucket: !Ref DistS3Bucket
-                S3Key: !Sub
-                    - "${env}/lambda/s3cleanup.zip"
-                    - { env: !Ref Environment }
+        Handler: index.handler
+        Role: !GetAtt CustomResourcesRole.Arn
+        Runtime: nodejs6.10
+        Code:
+          S3Bucket: !Ref DistS3Bucket
+          S3Key: !Sub
+            - "${env}/lambda/s3cleanup.zip"
+            - { env: !Ref Environment }
 
     CleanupKinesisFirehoseIntermediateS3Bucket:
       Type: Custom::CleanupS3Bucket
