@@ -9,6 +9,11 @@ npm install
 npm run package
 npm run dist
 
+cd $HPXDIR/src/custom_resources/s3cleanup
+npm install
+npm run package
+npm run dist
+
 cd $HPXDIR/src/custom_resources/pgquery
 npm install
 npm run package
