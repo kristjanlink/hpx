@@ -191,7 +191,6 @@ Resources:
 
     PixelServerS3Bucket:
         Type: "AWS::S3::Bucket"
-        DeletionPolicy: Retain
         Properties:
             BucketName: !Sub
                 - "${prefix}-${env}-srv-${AWS::Region}-${AWS::AccountId}"
@@ -583,6 +582,7 @@ Resources:
         LogStreamName: "RedshiftDelivery"
 
     PixelLogKinesisFirehose:
+      DependsOn: CleanupKinesisFirehoseIntermediateS3Bucket
       Type: "AWS::KinesisFirehose::DeliveryStream"
       Properties:
         DeliveryStreamName: !Sub
