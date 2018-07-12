@@ -1,8 +1,8 @@
 #!/bin/bash
 set -u
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SCRIPTNAME=`basename "${BASH_SOURCE[0]}"`
-LUSER=`whoami`
+SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
+LUSER=$(whoami)
 RELEASEBUCKET=${RELEASEBUCKET:-"hpx-release-us-west-2"}
 
 usage() {
@@ -47,8 +47,8 @@ EOF
 main() {
   validate_environment_variables
 
-  [ -z `which aws` ] && err "AWS Cli not found!"
-  REGION=`aws configure get region`
+  [ -z $(which aws) ] && err "AWS Cli not found!"
+  REGION=$(aws configure get region)
 
   while [[ $# > 0 ]]; do
     case "$1" in
@@ -73,13 +73,13 @@ main() {
     esac
   done
 
-  VERSION=${VERSION:-`latest_version`}
+  VERSION=${VERSION:-$(latest_version)}
   validate_version $VERSION
 
   DIST=${DIST:-"s3://$RELEASEBUCKET/$VERSION"}
   validate_s3uri $DIST
-  DISTS3BUCKET=`s3uri_bucket $DIST`
-  DISTS3ROOT=`s3uri_key $DIST`
+  DISTS3BUCKET=$(s3uri_bucket $DIST)
+  DISTS3ROOT=$(s3uri_key $DIST)
 
   PREFIX=${PREFIX:-"hpx"}
   validate_prefix $PREFIX
@@ -93,7 +93,7 @@ main() {
   VPC_CIDR=${VPC_CIDR:-"172.31.0.0/16"}
   validate_ipv4_cidr $VPC_CIDR
 
-  PARAMETERS=`cat <<-EOF
+  PARAMETERS=$(cat <<-EOF
   ParameterKey="Prefix",ParameterValue="$PREFIX"
   ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
   ParameterKey="DistS3Root",ParameterValue="$DISTS3ROOT"
@@ -101,20 +101,20 @@ main() {
   ParameterKey="RedshiftPassword",ParameterValue="$REDSHIFT_PASSWORD"
   ParameterKey="VpcCidrBlock",ParameterValue="$VPC_CIDR"
 EOF
-`
+)
   if ! aws cloudformation describe-stacks --stack-name $STACKNAME > /dev/null 2>&1; then
     info "Creating new stack: $STACKNAME"
     aws cloudformation create-stack \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
-      --template-url "`s3uri_to_s3url $DIST/cloudformation/hpx.yaml`" \
+      --template-url "$(s3uri_to_s3url $DIST/cloudformation/hpx.yaml)" \
       --parameters $PARAMETERS
   else
     info "Creating changeset for existing stack: $STACKNAME"
     aws cloudformation create-change-set \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
-      --template-url "`s3uri_to_s3url $DIST/cloudformation/hpx.yaml`" \
+      --template-url "$(s3uri_to_s3url $DIST/cloudformation/hpx.yaml)" \
       --change-set-name "$PREFIX-changeset-$LUSER-$REGION" \
       --parameters $PARAMETERS
 
@@ -146,7 +146,7 @@ validate_s3uri() {
 }
 
 s3uri_to_s3url() {
-  local awsregion=${REGION:-`aws configure get region`}
+  local awsregion=${REGION:-$(aws configure get region)}
   printf "https://s3-${awsregion}.amazonaws.com/${1:5}"
 }
 

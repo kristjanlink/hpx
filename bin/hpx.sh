@@ -1,7 +1,7 @@
 #!/bin/bash
 set -u
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-SCRIPTNAME=`basename "${BASH_SOURCE[0]}"`
+SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
 HPXDIR="$(dirname "$SCRIPTDIR" )"
 
 RELEASEBUCKET=${RELEASEBUCKET:-"hpx-release-us-west-2"}
@@ -29,8 +29,8 @@ EOF
 }
 
 main() {
-  [ -z `which aws` ] && err "AWS Cli not found!"
-  REGION=`aws configure get region`
+  [ -z $(which aws) ] && err "AWS Cli not found!"
+  REGION=$(aws configure get region)
 
   SUBCOMMAND=${1:-help}; shift
   case "$SUBCOMMAND" in
@@ -63,8 +63,8 @@ dist() {
       ;;
     *)
       DISTBUCKET=$DEVBUCKET
-      [ -z `which git` ] && err "Git not found!"
-      VERSION=`git rev-parse --abbrev-ref HEAD`
+      [ -z $(which git) ] && err "Git not found!"
+      VERSION=$(git rev-parse --abbrev-ref HEAD)
       [ -z $VERSION ] && err "Could not determine development BRANCH!"
       ;;
   esac
