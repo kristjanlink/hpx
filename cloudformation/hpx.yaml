@@ -531,6 +531,7 @@ Resources:
         SubnetId: !Ref HPXRedshiftClusterVpcSubnet
 
     HPXRedshiftClusterVpcEndpoint:
+      DependsOn: HPXRedshiftClusterVpcSubnet
       Type: "AWS::EC2::VPCEndpoint"
       Properties:
         VpcId: !Ref HPXRedshiftClusterVpc
