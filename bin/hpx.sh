@@ -103,7 +103,7 @@ dist() {
 }
 
 deploy() {
-  eval "$HPXDIR/dist/bin/hpx-deploy.sh -V $HPX_VERSION -C $HPX_ROOT ${2:-}"
+  eval "$HPXDIR/dist/bin/hpx-deploy.sh -V $HPX_VERSION -R $HPX_ROOT ${2:-}"
 }
 
 latest_version() {
