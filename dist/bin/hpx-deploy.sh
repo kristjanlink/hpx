@@ -157,10 +157,7 @@ main() {
   VPC_CIDR="${VPC_CIDR:-"172.31.0.0/16"}"
   validate_ipv4_cidr "$VPC_CIDR"
 
-
-  #MYIP="$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com)"
-  MYIP="$(curl -s http://checkip.amazonaws.com/)"
-  WHITELIST_CIDR="${MYIP//\"/}/32"
+  WHITELIST_CIDR="$(my_ip)/32"
   validate_ipv4_cidr "$WHITELIST_CIDR"
 
   PARAMETERS=$(cat <<-EOF
@@ -202,6 +199,20 @@ EOF
         --stack-name "$STACKNAME"
     fi
   fi
+}
+
+my_ip() {
+  local ip
+  if [ -n "$(which dig)" ]; then
+    ip="$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com)"
+  elif [ -n "$(which curl)" ]; then
+    ip="$(curl -s http://checkip.amazonaws.com/)"
+  elif [ -n "$(which wget)" ]; then
+    ip="$(wget -qO- http://checkip.amazonaws.com/)"
+  else
+    err "Can't get user's ip address!"
+  fi
+  printf ${ip//\"/}
 }
 
 is_valid_redshift_password() {
