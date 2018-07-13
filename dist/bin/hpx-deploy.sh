@@ -21,7 +21,7 @@ OPTIONS:
   -V,--version <version>        Select the version of HPX to deploy.
                                 Defaults to the latest version.
 
-  -C,--custom  <S3URI>          Deploy HPX from a custom s3 location.
+  -R,--root  <S3URI>            Deploy HPX from a custom s3 root location.
                                 Set to the root of your custom HPX instance.
                                 EXAMPLE: 's3://hpx-dev-us-west-2'
 
@@ -57,7 +57,7 @@ main() {
         [ -z $HPX_VERSION ] && err "(--version)_version string expected!"
         shift 2
         ;;
-      -C|--custom)
+      -R|--root)
         HPX_ROOT=${2:-}
         [ -z $HPX_ROOT ] && err "(--custom) S3 location expected!"
         shift 2
