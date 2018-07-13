@@ -21,7 +21,7 @@ OPTIONS:
   -V,--version <version>        Select the version of HPX to deploy.
                                 Defaults to the latest version.
 
-  -C,--custom  <S3URI>          Deploy HPX from a custom s3 location.
+  -R,--root  <S3URI>            Deploy HPX from a custom s3 root location.
                                 Set to the root of your custom HPX instance.
                                 EXAMPLE: 's3://hpx-dev-us-west-2'
 
@@ -57,7 +57,7 @@ main() {
         [ -z $HPX_VERSION ] && err "(--version)_version string expected!"
         shift 2
         ;;
-      -C|--custom)
+      -R|--root)
         HPX_ROOT=${2:-}
         [ -z $HPX_ROOT ] && err "(--custom) S3 location expected!"
         shift 2
@@ -91,7 +91,14 @@ main() {
   VPC_CIDR=${VPC_CIDR:-"172.31.0.0/16"}
   validate_ipv4_cidr $VPC_CIDR
 
+
+  MYIP=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com)
+  WHITELIST_CIDR=${MYIP//\"/}/32
+  #WHITELIST_CIDR=$(curl http://http://checkip.amazonaws.com/)/32
+  validate_ipv4_cidr $WHITELIST_CIDR
+
   PARAMETERS=$(cat <<-EOF
+  ParameterKey="WhitelistCidr",ParameterValue="$WHITELIST_CIDR"
   ParameterKey="Prefix",ParameterValue="$PREFIX"
   ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
   ParameterKey="DistS3Key",ParameterValue="$DISTS3KEY"
