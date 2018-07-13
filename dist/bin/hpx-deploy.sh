@@ -45,8 +45,6 @@ EOF
 }
 
 main() {
-  validate_environment_variables
-
   [ -z $(which aws) ] && err "AWS Cli not found!"
   REGION=$(aws configure get region)
 
@@ -62,7 +60,7 @@ main() {
         [ -z $HPX_ROOT ] && err "(--custom) S3 location expected!"
         shift 2
         ;;
-      -x|--execute)
+      -X|--execute)
         EXECUTE_CHANGESET="TRUE"
         shift
         ;;
@@ -84,6 +82,8 @@ main() {
 
   STACKNAME=${STACKNAME:-"$PREFIX-$REGION"}
   validate_stackname $STACKNAME
+
+  REDSHIFT_PASSWORD="${REDSHIFT_PASSWORD:-$(create_password)}"
 
   REDSHIFT_USER=${REDSHIFT_USER:-"hpx"}
   validate_redshift_user $REDSHIFT_USER
@@ -116,18 +116,37 @@ EOF
       --parameters $PARAMETERS
   else
     info "Creating changeset for existing stack: $STACKNAME"
+    CHANGESET="$PREFIX-changeset-$LUSER-$REGION"
     aws cloudformation create-change-set \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
       --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
-      --change-set-name "$PREFIX-changeset-$LUSER-$REGION" \
+      --change-set-name "$CHANGESET" \
       --parameters $PARAMETERS
 
-    if [ ${EXECUTE_CHANGESET:-FALSE} = TRUE ]; then
+    info "Waiting for changeset to finish creating: $CHANGESET"
+    aws cloudformation wait change-set-create-complete \
+      --change-set-name "$CHANGESET" \
+      --stack-name "$STACKNAME"
+
+    if [ ${EXECUTE_CHANGESET:-"FALSE"} = "TRUE" ]; then
+      info "Executing changeset: $CHANGESET"
       aws cloudformation execute-change-set \
-        --change-set-name "$PREFIX-changeset-$LUSER-$REGION"
+        --change-set-name "$CHANGESET" \
+        --stack-name "$STACKNAME"
     fi
   fi
+}
+
+create_password() {
+  if [ -z "${REDSHIFT_PASSWORD:-}" ]; then
+    REDSHIFT_PASSWORD=""
+    while [[ !(( "$REDSHIFT_PASSWORD" =~ [A-Z]+ ) && ( "$REDSHIFT_PASSWORD" =~ [a-z]+ ) && ( "$REDSHIFT_PASSWORD" =~ [0-9]+ )) ]]; do
+      REDSHIFT_PASSWORD=$(LC_ALL=C tr -dc 'A-Za-z0-9!#$&*+,-.;<>?^_~' </dev/urandom | head -c 13 ; echo)
+    done
+    printf "REDSHIFT_PASSWORD='$REDSHIFT_PASSWORD'\n" >> $HOME/.hpxenv
+  fi
+  printf "$REDSHIFT_PASSWORD"
 }
 
 latest_version() {
