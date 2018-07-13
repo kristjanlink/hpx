@@ -6,7 +6,7 @@ HPXDIR="$(dirname "$SCRIPTDIR" )"
 
 usage() {
     cat 1>&2 <<EOF
-$SCRIPTNAME build 1.0.0
+$SCRIPTNAME
 
 USAGE:
   hpx [package|dist|help] [OPTIONS]
@@ -52,6 +52,7 @@ FILES:
                             specified through HPX_CFG_DIR or --config). Use
                             this file to specify environment variables.
 EOF
+exit
 }
 
 main() {
@@ -84,6 +85,9 @@ main() {
         HPX_OPTIONS+=("$1")
         DRYRUN="| "
         shift
+        ;;
+      -h|--help)
+        usage
         ;;
       *)
         HPX_OPTIONS+=("$1")

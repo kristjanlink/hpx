@@ -7,7 +7,7 @@ HPX_ROOT="${HPX_ROOT:-"s3://hpx-release-us-west-2"}"
 
 usage() {
     cat 1>&2 <<EOF
-$SCRIPTNAME build 1.0.0
+$SCRIPTNAME
 
 USAGE:
   hpx-deploy [OPTIONS]
@@ -34,6 +34,8 @@ OPTIONS:
 
   -D,--dryrun                   Does not deploy HPX, but prints the
                                 aws commands that will be called.
+
+  -h,--help                     Print this message
 
 ENVIRONMENT/CONFIG VARIABLES:
   HPX_CFG                       Environment file to use unless --config
@@ -71,9 +73,12 @@ FILES:
                                 After initial configuration, this file will
                                 contain the REDSHIFT_PASSWORD.
 EOF
+exit
 }
 
 main() {
+  [ "$1" = "help" ] && usage
+
   [ -z "$(which aws)" ] && err "AWS Cli not found!"
   REGION=$(aws configure get region)
 
@@ -112,6 +117,9 @@ main() {
         DRYRUN="| "
         HPX_OPTIONS+=("$1")
         shift
+        ;;
+      -h|--help)
+        usage
         ;;
       *)
         HPX_OPTIONS+=("$1")
