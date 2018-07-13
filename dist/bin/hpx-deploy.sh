@@ -1,45 +1,45 @@
 #!/bin/bash
 set -u
+[ -f "$HOME/.hpxenv" ] && source "$HOME/.hpxenv"
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
 LUSER=$(whoami)
-RELEASEBUCKET=${RELEASEBUCKET:-"hpx-release-us-west-2"}
+HPX_ROOT=${HPX_ROOT:-"s3://hpx-release-us-west-2"}
 
 usage() {
     cat 1>&2 <<EOF
 cf-deploy build 1.0.0
 
 USAGE:
-  [VARIABLE=<string> ...] hpx-deploy [OPTIONS] <stack-name>
+  hpx-deploy [OPTIONS] <stack-name>
 
 ARGUMENTS:
   stack-name                    Name of the stack you wish to create or update.
-                                Defaults to "hpx-<AWS REGION>"
+                                Defaults to "$PREFIX-<AWS REGION>"
 
 OPTIONS:
   -V,--version <version>        Select the version of HPX to deploy.
                                 Defaults to the latest version.
 
-  -c,--custom  <S3URI>          Deploy HPX from a custom s3 location.
+  -C,--custom  <S3URI>          Deploy HPX from a custom s3 location.
                                 Set to the root of your custom HPX instance.
-                                (--version is ignored)
-                                EXAMPLE: 's3://hpx-dev-us-west-2/master'
+                                EXAMPLE: 's3://hpx-dev-us-west-2'
 
-  -x,--execute                  If deploying to an existing stack, immediately
+  -X,--execute                  If deploying to an existing stack, immediately
                                 execute any changes. If not set, a changeset is
                                 created for review before execution.
 
 ENVIRONMENT VARIABLES:
-  VPC_CIDR                      The IP block to use when creating VPC resources.
+  REDSHIFT_PASSWORD (required)  The Redshift master password to set.
+
+  VPC_CIDR          (optional)  The IP block to use when creating VPC resources.
                                 Example: '10.0.55/24' or 'fc00:100::/32'
                                 Defaults to 172.16.0.0/16
 
-  REDSHIFT_PASSWORD (required)  The Redshift master password to set.
-
   REDSHIFT_USER     (optional)  The Redshift root user to create.
-                                Defaults to 'turbo'
+                                Defaults to 'hpx'
 
-  PREFIX   (optional)           The prefix to use when naming AWS resources.
+  PREFIX            (optional)  The prefix to use when naming AWS resources.
                                 Defaults to 'hpx'
 EOF
 }
@@ -53,13 +53,13 @@ main() {
   while [[ $# > 0 ]]; do
     case "$1" in
       -V|--version)
-        VERSION=${2:-}
-        [ -z $VERSION ] && err "(--version) Version string expected!"
+        HPX_VERSION=${2:-}
+        [ -z $HPX_VERSION ] && err "(--version)_version string expected!"
         shift 2
         ;;
-      -c|--custom)
-        DIST=${2:-}
-        [ -z $DIST ] && err "(--custom) S3 location expected!"
+      -C|--custom)
+        HPX_ROOT=${2:-}
+        [ -z $HPX_ROOT ] && err "(--custom) S3 location expected!"
         shift 2
         ;;
       -x|--execute)
@@ -68,18 +68,16 @@ main() {
         ;;
       *)
         STACKNAME=$@
-        validate_stackname $STACKNAME
         shift $#
     esac
   done
 
-  VERSION=${VERSION:-$(latest_version)}
-  validate_version $VERSION
+  HPX_VERSION=${HPX_VERSION:-$(latest_version)}
+  validate_version $HPX_VERSION
 
-  DIST=${DIST:-"s3://$RELEASEBUCKET/$VERSION"}
-  validate_s3uri $DIST
-  DISTS3BUCKET=$(s3uri_bucket $DIST)
-  DISTS3ROOT=$(s3uri_key $DIST)
+  validate_s3uri $HPX_ROOT/$HPX_VERSION
+  DISTS3BUCKET=${HPX_ROOT:5}
+  DISTS3KEY=$HPX_VERSION
 
   PREFIX=${PREFIX:-"hpx"}
   validate_prefix $PREFIX
@@ -96,7 +94,7 @@ main() {
   PARAMETERS=$(cat <<-EOF
   ParameterKey="Prefix",ParameterValue="$PREFIX"
   ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
-  ParameterKey="DistS3Root",ParameterValue="$DISTS3ROOT"
+  ParameterKey="DistS3Key",ParameterValue="$DISTS3KEY"
   ParameterKey="RedshiftUser",ParameterValue="$REDSHIFT_USER"
   ParameterKey="RedshiftPassword",ParameterValue="$REDSHIFT_PASSWORD"
   ParameterKey="VpcCidrBlock",ParameterValue="$VPC_CIDR"
@@ -107,14 +105,14 @@ EOF
     aws cloudformation create-stack \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
-      --template-url "$(s3uri_to_s3url $DIST/cloudformation/hpx.yaml)" \
+      --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
       --parameters $PARAMETERS
   else
     info "Creating changeset for existing stack: $STACKNAME"
     aws cloudformation create-change-set \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
-      --template-url "$(s3uri_to_s3url $DIST/cloudformation/hpx.yaml)" \
+      --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
       --change-set-name "$PREFIX-changeset-$LUSER-$REGION" \
       --parameters $PARAMETERS
 
@@ -123,21 +121,20 @@ EOF
         --change-set-name "$PREFIX-changeset-$LUSER-$REGION"
     fi
   fi
-
-
 }
 
 latest_version() {
-  aws s3 cp s3://$RELEASEBUCKET/LATEST - 2> /dev/null
+  aws s3 cp s3://$HPX_ROOT/LATEST - 2> /dev/null
 }
 
 validate_version() {
-  [[ ! $1 =~ ^[0-9]+\.[0-9]+(\.[0-9]+)*$ ]] && err "Invalid Version ($1). Version must match ^[0-9]+\.[0-9]+(\.[0-9]+)*$"
+  [ -z ${1:-} ] && err "Missing version string!"
+  [[ ! $1 =~ ^[0-9]+\.[0-9]+(\.[0-9]+[a-zA-Z]*){0,1}$ ]] && err "Version must match format ^[0-9]+\.[0-9]+(\.[0-9]+[a-zA-Z]*){0,1}$"
 }
 
 validate_stackname() {
   [ -z "$1" ] && err "Stack name must be set!"
-  [[ ! "$1" =~ ^[a-zA-Z0-9._\-]{1,255}$ ]] && err "Invalid stack name ($1). Stackname must match ^[a-zA-Z0-9._\-]{1,255}$"
+  [[ ! "$1" =~ ^[a-zA-Z][-a-zA-Z0-9]{1,128}$ ]] && err "Invalid stack name ($1). Stackname must match ^[a-zA-Z][-a-zA-Z0-9]{1,128}$"
 }
 
 validate_s3uri() {
@@ -162,18 +159,6 @@ validate_redshift_user() {
 validate_ipv4_cidr() {
   [[ ! "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$ ]] && \
   err "Invalid CIDR ($1)"
-}
-
-s3uri_bucket() {
-  local strip_prefix=${1:5}
-  local as_array=(${strip_prefix/\// })
-  printf ${as_array}
-}
-
-s3uri_key() {
-  local strip_prefix=${1:5}
-  local as_array=(${strip_prefix/\// })
-  printf ${as_array[1]}
 }
 
 validate_environment_variables() {

@@ -6,7 +6,7 @@ Parameters:
     DistS3Bucket:
         Type: String
         Default: "hpx-release-us-west-2"
-    DistS3Root:
+    DistS3Key:
         Type: String
     RedshiftUser:
         Type: String
@@ -131,7 +131,7 @@ Resources:
                 S3Bucket: !Ref DistS3Bucket
                 S3Key: !Sub
                     - "${root}/lambda/s3copy.zip"
-                    - { root: !Ref DistS3Root }
+                    - { root: !Ref DistS3Key }
 
     CopyPixelToPixelServer:
         Type: Custom::CopyS3Object
@@ -140,7 +140,7 @@ Resources:
             SourceBucket: !Ref DistS3Bucket
             SourceKey: !Sub
                 - "${root}/s3/pixelserver/1x1.gif"
-                - { root: !Ref DistS3Root }
+                - { root: !Ref DistS3Key }
             DestinationBucket: !Ref PixelServerS3Bucket
             DestinationKey: "1x1.gif"
 
@@ -155,7 +155,7 @@ Resources:
                 S3Bucket: !Ref DistS3Bucket
                 S3Key: !Sub
                     - "${root}/lambda/pgquery.zip"
-                    - { root: !Ref DistS3Root }
+                    - { root: !Ref DistS3Key }
             VpcConfig:
                 SecurityGroupIds:
                     - !GetAtt HPXRedshiftClusterVpcSecurityGroup.GroupId
@@ -402,7 +402,7 @@ Resources:
                 S3Bucket: !Ref DistS3Bucket
                 S3Key: !Sub
                     - "${root}/lambda/hpx-cloudfront-logs-production.zip"
-                    - { root: !Ref DistS3Root }
+                    - { root: !Ref DistS3Key }
             Handler: "index.handler"
             Role: !GetAtt PixelLogLambdaRole.Arn
             Runtime: "nodejs8.10"
