@@ -16,6 +16,9 @@ Parameters:
         NoEcho: true
     VpcCidrBlock:
         Type: String
+    WhitelistCidr:
+        Type: String
+        AllowedPattern: '^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[1-2][0-9]|3[0-2]))?$'
 
 Mappings:
   RegionMap:
@@ -483,6 +486,12 @@ Resources:
         VpcId: !Ref HPXRedshiftClusterVpc
         SecurityGroupIngress:
           -
+            CidrIp: !Ref WhitelistCidr
+            Description: "Redshift from MyIP"
+            FromPort: 5439
+            ToPort: 5439
+            IpProtocol: "TCP"
+          -
             CidrIp: { "Fn::FindInMap" : [ "RegionMap", { "Ref" : "AWS::Region" }, "Kinesis" ]}
             Description: "Kinesis"
             FromPort: 5439
@@ -507,17 +516,12 @@ Resources:
             ToPort: 5439
             IpProtocol: "TCP"
           -
-            CidrIp: "73.71.90.13/32"
-            Description: "Redshift from Adolfo"
-            FromPort: 5439
-            ToPort: 5439
-            IpProtocol: "TCP"
-          -
             CidrIp: "24.5.134.249/32"
             Description: "Redshift from Dan"
             FromPort: 5439
             ToPort: 5439
             IpProtocol: "TCP"
+
 
     HPXRedshiftClusterVpcSubnetRouteTableAssociation:
       Type: "AWS::EC2::SubnetRouteTableAssociation"

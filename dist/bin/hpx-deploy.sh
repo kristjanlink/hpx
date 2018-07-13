@@ -91,7 +91,14 @@ main() {
   VPC_CIDR=${VPC_CIDR:-"172.31.0.0/16"}
   validate_ipv4_cidr $VPC_CIDR
 
+
+  MYIP=$(dig TXT +short o-o.myaddr.l.google.com @ns1.google.com)
+  WHITELIST_CIDR=${MYIP//\"/}/32
+  #WHITELIST_CIDR=$(curl http://http://checkip.amazonaws.com/)/32
+  validate_ipv4_cidr $WHITELIST_CIDR
+
   PARAMETERS=$(cat <<-EOF
+  ParameterKey="WhitelistCidr",ParameterValue="$WHITELIST_CIDR"
   ParameterKey="Prefix",ParameterValue="$PREFIX"
   ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
   ParameterKey="DistS3Key",ParameterValue="$DISTS3KEY"
