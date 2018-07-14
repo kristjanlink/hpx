@@ -1,3 +1,10 @@
+Outputs:
+  HPXPixelUrl:
+    Description: "The Pixel Url to traffic. 'a', 'b', 'c', and 'd' are the variable names that will get logged in Redshift. Replace \"MACRO_*\" with actual macros before trafficking."
+    Value: !Sub
+      - "https://${hostname}/1x1.gif?a=MACRO_A&b=MACRO_B&c=MACRO_C&D=MACRO_D"
+      - { hostname: !GetAtt PixelServerCloudfrontDistribution.DomainName }
+
 Parameters:
     Environment:
         Type: String
@@ -16,7 +23,7 @@ Parameters:
         NoEcho: true
     VpcCidrBlock:
         Type: String
-        Default: 192.168.48.0/24
+        Default: 192.168.55.0/24
 
 Mappings:
   RegionMap:
