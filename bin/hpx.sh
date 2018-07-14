@@ -115,8 +115,8 @@ main() {
 }
 
 package() {
-  for custom_resource in "$HPXDIR/src/custom_resources/*/"; do
-    pushd "$custom_resource"
+  for custom_resource in $HPXDIR/src/custom_resources/*/; do
+    pushd "${custom_resource}"
     npm install
     npm run package
     popd
@@ -136,6 +136,8 @@ dist() {
     --exclude \".git/*\" \
     --exclude .gitignore \
     --exclude .hpxenv
+
+  dryrun printf "$HPX_VERSION" | aws s3 cp - "$HPX_ROOT/LATEST"
 }
 
 deploy() {
@@ -173,7 +175,7 @@ err() {
 }
 
 dryrun() {
-  if [ -n "$DRYRUN" ]; then
+  if [ -n "${DRYRUN:-}" ]; then
     printf "[${SCRIPTNAME}] DRYRUN:\n$DRYRUN"
     for line in "$@"; do
       if [[ "$line" =~ ^--.*$ ]]; then

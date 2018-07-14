@@ -17,7 +17,6 @@ OPTIONS:
                                 Defaults to 'hpx-<AWS REGION>', or if PREFIX is
                                 set, '<PREFIX>-<AWS REGION>'
 
-
   -V,--version <version>        Select the version of HPX to deploy.
                                 Defaults to the latest version.
 
@@ -34,6 +33,9 @@ OPTIONS:
 
   -D,--dryrun                   Does not deploy HPX, but prints the
                                 aws commands that will be called.
+
+  --status                      Check the status of a stack being created or
+                                updated.
 
   -h,--help                     Print this message
 
@@ -77,10 +79,12 @@ exit
 }
 
 main() {
-  [ "$1" = "help" ] && usage
+  [ "${1:-}" = "help" ] && usage
 
   [ -z "$(which aws)" ] && err "AWS Cli not found!"
   REGION=$(aws configure get region)
+
+  SUBCOMMAND="deploy"
 
   while [[ $# > 0 ]]; do
     case "$1" in
@@ -118,6 +122,10 @@ main() {
         HPX_OPTIONS+=("$1")
         shift
         ;;
+      --status)
+        SUBCOMMAND="status"
+        shift
+        ;;
       -h|--help)
         usage
         ;;
@@ -134,15 +142,28 @@ main() {
   PREFIX="${PREFIX:-"hpx"}"
   validate_prefix "$PREFIX"
 
+  STACKNAME="${STACKNAME:-"$PREFIX-$REGION"}"
+  validate_stackname "$STACKNAME"
+
+  case "$SUBCOMMAND" in
+    deploy)
+      deploy
+      ;;
+    status)
+      status
+      ;;
+    *)
+      usage
+  esac
+}
+
+deploy() {
   HPX_VERSION="${HPX_VERSION:-"$(latest_version)"}"
   validate_version "$HPX_VERSION"
 
   validate_s3uri "$HPX_ROOT/$HPX_VERSION"
   DISTS3BUCKET="${HPX_ROOT:5}"
   DISTS3KEY="$HPX_VERSION"
-
-  STACKNAME="${STACKNAME:-"$PREFIX-$REGION"}"
-  validate_stackname "$STACKNAME"
 
   REDSHIFT_USER="${REDSHIFT_USER:-"hpx"}"
   validate_redshift_user "$REDSHIFT_USER"
@@ -160,23 +181,26 @@ main() {
   WHITELIST_CIDR="$(my_ip)/32"
   validate_ipv4_cidr "$WHITELIST_CIDR"
 
-  PARAMETERS=$(cat <<-EOF
-  ParameterKey="WhitelistCidr",ParameterValue="$WHITELIST_CIDR"
+  PARAMETERS=(
   ParameterKey="Prefix",ParameterValue="$PREFIX"
   ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
   ParameterKey="DistS3Key",ParameterValue="$DISTS3KEY"
-  ParameterKey="RedshiftUser",ParameterValue="$REDSHIFT_USER"
-  ParameterKey="RedshiftPassword",ParameterValue="$REDSHIFT_PASSWORD"
+  ParameterKey="RedshiftUser",ParameterValue=\""$REDSHIFT_USER"\"
+  ParameterKey="RedshiftPassword",ParameterValue=\""$REDSHIFT_PASSWORD"\"
   ParameterKey="VpcCidrBlock",ParameterValue="$VPC_CIDR"
-EOF
-)
+  ParameterKey="WhitelistCidr",ParameterValue="$WHITELIST_CIDR"
+  )
+
   if ! aws cloudformation describe-stacks --stack-name "$STACKNAME" > /dev/null 2>&1; then
     info "Creating new stack: $STACKNAME"
     dryrun aws cloudformation create-stack \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
       --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
-      --parameters "$PARAMETERS"
+      --parameters "${PARAMETERS[@]}"
+
+    info "Stack creation may take 20 minutes or longer. \
+    Run \"$SCRIPTNAME --status\" to check on the status of your stack, "
   else
     info "Creating changeset for existing stack: $STACKNAME"
     CHANGESET="$PREFIX-changeset-$LUSER-$REGION"
@@ -185,7 +209,7 @@ EOF
       --stack-name "$STACKNAME" \
       --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
       --change-set-name "$CHANGESET" \
-      --parameters "$PARAMETERS"
+      --parameters "${PARAMETERS[@]}"
 
     if [ ${EXECUTE_CHANGESET:-"FALSE"} = "TRUE" ]; then
       info "Waiting for changeset to finish creating: $CHANGESET"
@@ -199,6 +223,30 @@ EOF
         --stack-name "$STACKNAME"
     fi
   fi
+}
+
+status() {
+  local status="$(aws cloudformation describe-stacks --stack-name $STACKNAME --output text  | awk 'FNR == 1 {print $8;}')"
+  case "$status" in
+    CREATE_COMPLETE|UPDATE_COMPLETE)
+      info "Stack create/update succeded!"
+      local redshift_cluster="$(aws cloudformation describe-stack-resources --stack-name $STACKNAME --output text  | awk '{if ($2 == "HPXRedshiftCluster") print $3;}')"
+      local REDSHIFT_ENDPOINT="$(aws redshift describe-clusters --cluster-identifier $redshift_cluster --output text | awk '{if ($1 == "ENDPOINT") print $2 ":" $3;}')"
+      info "*** Your redshift endpoint is $REDSHIFT_ENDPOINT"
+
+      local cloudfront_id="$(aws cloudformation describe-stack-resources --stack-name $STACKNAME --output text  | awk '{if ($2 == "PixelServerCloudfrontDistribution") print $3;}')"
+      local cloudfront_host="$(aws cloudfront get-distribution --id $cloudfront_id --output text | awk '{if ($1 == "DISTRIBUTION") print $3}')"
+      info "*** Your pixel url is http://$cloudfront_host/1x1.gif?a=value1&b=value2&c=value3&value4"
+      ;;
+    CREATE_IN_PROGRESS|UPDATE_IN_PROGRESS|UPDATE_COMPLETE_CLEANUP_IN_PROGRESS)
+      info "Stack creation/update still in progress."
+      ;;
+    REVIEW_IN_PROGRESS)
+      info "Stack creation/update is being reviewed."
+      ;;
+    *)
+      NOUSAGE=TRUE err "Stack create/update failed! Check the AWS cloudformation console for details ($STACKNAME)"
+  esac
 }
 
 my_ip() {
@@ -229,7 +277,7 @@ validate_redshift_password() {
 create_redshift_password() {
   local rpw=""
   while ! is_valid_redshift_password "$rpw"; do
-    rpw="$( LC_ALL=C tr -dc 'A-Za-z0-9!#$&*+,-.;<>?^_~' </dev/urandom | head -c 13 )"
+    rpw="$( LC_ALL=C tr -dc 'A-Za-z0-9!#$&*+-.;<>?^_~' </dev/urandom | head -c 13 )"
   done
   printf "$rpw"
 }
@@ -283,8 +331,8 @@ info() {
 }
 
 err() {
-  printf "[${SCRIPTNAME}] ERROR: ${@:-Unknown Error!}\n"
-  usage
+  printf "[${SCRIPTNAME}] ERROR: %s\n" "${1:-Unknown Error!}"
+  [ -z ${NOUSAGE:-} ] && usage
   exit -1
 }
 
