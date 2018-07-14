@@ -1,3 +1,10 @@
+Outputs:
+  HPXPixelUrl:
+    Description: "The Pixel Url to traffic. 'a', 'b', 'c', and 'd' are the variable names that will get logged in Redshift. Replace \"MACRO_*\" with actual macros before trafficking."
+    Value: !Sub
+      - "https://${hostname}/1x1.gif?a=MACRO_A&b=MACRO_B&c=MACRO_C&D=MACRO_D"
+      - { hostname: !GetAtt PixelServerCloudfrontDistribution.DomainName }
+
 Parameters:
     Prefix:
         Type: String
@@ -113,6 +120,7 @@ Resources:
                                     - s3:GetObject
                                     - s3:GetObjectVersion
                                     - s3:PutObject
+                                    - s3:DeleteObject
                                 Resource: arn:aws:s3:::*
                             -
                                 Sid: "AccessVPCs"
@@ -222,6 +230,7 @@ Resources:
     PixelLogS3Bucket:
         DependsOn: PixlLogLamdaPermission
         Type: "AWS::S3::Bucket"
+        DeletionPolicy: Retain
         Properties:
             BucketName: !Sub
                 - "${prefix}-log-${AWS::Region}-${AWS::AccountId}"
@@ -530,6 +539,7 @@ Resources:
         SubnetId: !Ref HPXRedshiftClusterVpcSubnet
 
     HPXRedshiftClusterVpcEndpoint:
+      DependsOn: HPXRedshiftClusterVpcSubnet
       Type: "AWS::EC2::VPCEndpoint"
       Properties:
         VpcId: !Ref HPXRedshiftClusterVpc
@@ -577,6 +587,7 @@ Resources:
         LogStreamName: "RedshiftDelivery"
 
     PixelLogKinesisFirehose:
+      DependsOn: KinesisFirehoseIntermediateS3BucketInit
       Type: "AWS::KinesisFirehose::DeliveryStream"
       Properties:
         DeliveryStreamName: !Sub
@@ -616,3 +627,21 @@ Resources:
             - "${prefix}-kinesis-intermediate-${AWS::Region}-${AWS::AccountId}"
             - { prefix: !Ref Prefix }
           AccessControl: "Private"
+
+    S3BucketInitLambda:
+      Type: AWS::Lambda::Function
+      Properties:
+        Handler: index.handler
+        Role: !GetAtt CustomResourcesRole.Arn
+        Runtime: nodejs6.10
+        Code:
+          S3Bucket: !Ref DistS3Bucket
+          S3Key: !Sub
+            - "${root}/lambda/s3init.zip"
+            - { root: !Ref DistS3Key }
+
+    KinesisFirehoseIntermediateS3BucketInit:
+      Type: Custom::S3BucketInit
+      Properties:
+        ServiceToken: !GetAtt S3BucketInitLambda.Arn
+        Bucket: !Ref KinesisFirehoseIntermediateS3Bucket

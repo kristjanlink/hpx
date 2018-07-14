@@ -4,3 +4,4 @@
 # Dist
 dist/lambda/pgquery.zip
 dist/lambda/s3copy.zip
+dist/lambda/s3init.zip
