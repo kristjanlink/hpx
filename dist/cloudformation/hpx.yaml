@@ -156,6 +156,7 @@ Resources:
             DestinationKey: "1x1.gif"
 
     PGQueryLambda:
+        DependsOn: HPXRedshiftClusterVpcEndpoint
         Type: AWS::Lambda::Function
         Properties:
             Handler: index.handler
@@ -175,9 +176,7 @@ Resources:
                     - !Ref HPXRedshiftClusterVpcSubnet
 
     CreatePixelsTable:
-        DependsOn:
-          - HPXRedshiftCluster
-          - HPXRedshiftClusterVpcEndpoint
+        DependsOn: HPXRedshiftCluster
         Type: Custom::PGQuery
         Properties:
             ServiceToken: !GetAtt PGQueryLambda.Arn
@@ -473,6 +472,7 @@ Resources:
         GatewayId: !Ref HPXRedshiftClusterVpcInternetGateway
 
     HPXRedshiftClusterVpcSubnet:
+      DependsOn: CustomResourcesRole
       Type: "AWS::EC2::Subnet"
       Properties:
         CidrBlock: !Ref VpcCidrBlock
@@ -486,6 +486,7 @@ Resources:
           - !Ref HPXRedshiftClusterVpcSubnet
 
     HPXRedshiftClusterVpcSecurityGroup:
+      DependsOn: CustomResourcesRole
       Type: "AWS::EC2::SecurityGroup"
       Properties:
         GroupName: !Sub
