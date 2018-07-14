@@ -1,55 +1,48 @@
 # hpx
 
 ## Prerequisites
-- git
-- awscli (instructions below if you haven't done this yet.)
 
-## Quickstart: Updating HPX Using CloudFormation
+Amazon command line tools (```awscli```) are required in order to use the HPX scripts. For details, see [Amazon's documentation](https://docs.aws.amazon.com/lambda/latest/dg/setup-awscli.html)
 
-First, get your code into S3 and create a stack changeset.
-A script is provided for your convenience:
-```
-./bin/deploy.sh
-```
+## Quickstart: Creating an HPX stack
 
-Second, either from the AWS Console or the AWS Cli (the Console is easier for this), find the changeset you just created within the stack (i.e. hpx-master->changesets). Review the changeset to confirm that the predicted changes match what you expect and execute!
-
-Assuming all goes well, commit your code and have a beer.
-
-### Environments, Stacks and Changesets
-
-```${Environment}``` is set based on your current branch:
-If in master, the environment is set to "prod", otherwise the environment is set to your branch name.
-
-The *Environment* is used to identify which Stack should be updated as well as passed as a parameter to CloudFormation to uniquely name AWS resources within each Stack.
-
-
-
-
-## Appendix: Setting up the AWS Cli
-### Get Python
+From a bash prompt:
 ```bash
-brew install python@3
+./dist/bin/hpx-deploy.sh
 ```
 
-### Install AWS Cli
+This will create a default stack and automatically configure each AWS Resource.
+
+For information on how to customize your HPX stack, run:
 ```bash
-sudo -H pip3 install awscli
-```
-Optional: add ```complete -C aws_completer aws``` to your .bashrc file to enable command line completion.
-
-### Setup AWS Credentials
-Create ```~/.aws/credentials``` with contents as follows:
-
-```ini
-[default]
-aws_access_key_id=<create in aws console>
-aws_secret_access_key=<create in aws console>
-region=us-east-1
+./dist/bin/hpx-deploy.sh help
 ```
 
-### Test
+### Developing HPX
 
+```
+./bin/hpx.sh
+```
+This script contains the tools necessary to package and distribute hpx.
+For usage details:
 ```bash
-aws iam list-users
+./bin/hpx.sh help
+```
+
+When developing hpx, we recommend use a separate root and prefixes for testing
+non-release code. For example, the configuration below sets the prefix based on the current git
+branch.
+
+``` ~/.hpx/default
+REDSHIFT_PASSWORD=**********
+
+if [ ! -z ${PRODUCTION:-} ]; then
+ HPX_ROOT=s3://hpx-release-us-west-2
+ PREFIX=hpxmaster
+else
+ BRANCH=$(git rev-parse --abbrev-ref HEAD)
+ HPX_ROOT=s3://hpx-dev-us-west-2
+ HPX_VERSION=0.0.0${BRANCH//[^a-zA-Z0-9]/}
+ PREFIX=hpx${BRANCH//[^a-zA-Z0-9]/}
+fi
 ```

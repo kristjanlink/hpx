@@ -1,5 +1,7 @@
+# Env
+/.env
+
 # Dist
-dist
-lambda/pgquery.zip
-lambda/s3copy.zip
-lambda/s3cleanup.zip
+dist/lambda/pgquery.zip
+dist/lambda/s3copy.zip
+dist/lambda/s3init.zip
