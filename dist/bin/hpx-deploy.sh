@@ -226,7 +226,8 @@ deploy() {
 }
 
 status() {
-  local status="$(aws cloudformation describe-stacks --stack-name $STACKNAME --output text  | awk 'FNR == 1 {print $8;}')"
+  local status="$(aws cloudformation describe-stacks --stack-name $STACKNAME --output text  | awk 'FNR == 1 {print $7;}')"
+
   case "$status" in
     CREATE_COMPLETE|UPDATE_COMPLETE)
       info "Stack create/update succeded!"
