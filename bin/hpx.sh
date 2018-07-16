@@ -135,9 +135,11 @@ dist() {
     --delete \
     --exclude \".git/*\" \
     --exclude .gitignore \
-    --exclude .hpxenv
+    --exclude .hpxenv \
+    --grants "read=uri=http://acs.amazonaws.com/groups/global/AllUsers"
 
-  dryrun printf "$HPX_VERSION" | aws s3 cp - "$HPX_ROOT/LATEST"
+  dryrun printf "$HPX_VERSION" | aws s3 cp - "$HPX_ROOT/LATEST" \
+  --grants "read=uri=http://acs.amazonaws.com/groups/global/AllUsers"
 }
 
 deploy() {

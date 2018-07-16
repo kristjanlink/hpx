@@ -1,5 +1,6 @@
 #!/bin/bash
 set -u
+
 SCRIPTDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SCRIPTNAME=$(basename "${BASH_SOURCE[0]}")
 LUSER=$(whoami)
@@ -236,6 +237,8 @@ status() {
       local redshift_cluster="$(aws cloudformation describe-stack-resources --stack-name $STACKNAME --output text  | awk '{if ($2 == "HPXRedshiftCluster") print $3;}')"
       local REDSHIFT_ENDPOINT="$(aws redshift describe-clusters --cluster-identifier $redshift_cluster --output text | awk '{if ($1 == "ENDPOINT") print $2 ":" $3;}')"
       info "*** Your redshift endpoint is $REDSHIFT_ENDPOINT"
+      info "*** Connect to redshift with user \'$REDSHIFT_USER\' and password \'$REDSHIFT_PASSWORD\'."
+      info "*** You can find also find your Redshift user and password in \'$HPX_CFG\'"
 
       local cloudfront_id="$(aws cloudformation describe-stack-resources --stack-name $STACKNAME --output text  | awk '{if ($2 == "PixelServerCloudfrontDistribution") print $3;}')"
       local cloudfront_host="$(aws cloudfront get-distribution --id $cloudfront_id --output text | awk '{if ($1 == "DISTRIBUTION") print $3}')"
