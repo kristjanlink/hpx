@@ -181,6 +181,8 @@ deploy() {
   WHITELIST_CIDR="$(my_ip)/32"
   validate_ipv4_cidr "$WHITELIST_CIDR"
 
+  write_defaults
+
   PARAMETERS=(
   ParameterKey="Prefix",ParameterValue="$PREFIX"
   ParameterKey="DistS3Bucket",ParameterValue="$DISTS3BUCKET"
@@ -278,13 +280,15 @@ validate_redshift_password() {
 create_redshift_password() {
   local rpw=""
   while ! is_valid_redshift_password "$rpw"; do
-    rpw="$( LC_ALL=C tr -dc 'A-Za-z0-9!#$&*+-.;<>?^_~' </dev/urandom | head -c 13 )"
+    rpw="$( LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 13 )"
   done
   printf "$rpw"
 }
 
 latest_version() {
-  aws s3 cp "$HPX_ROOT/LATEST" - 2> /dev/null
+  local latest="$(aws s3 cp "$HPX_ROOT/LATEST" - 2> /dev/null)"
+  [ -z latest ] && err "Could not find latest version! Check your internet connection."
+  printf "$latest"
 }
 
 validate_hpx_cfg() {
@@ -295,7 +299,7 @@ validate_hpx_cfg() {
 
 validate_version() {
   [ -z "${1:-}" ] && err "Missing version string!"
-  [[ ! "$1" =~ ^[0-9]+\.[0-9]+(\.[0-9]+[a-zA-Z]*){0,1}$ ]] && err "Version must match format ^[0-9]+\.[0-9]+(\.[0-9]+[a-zA-Z]*){0,1}$"
+  [[ ! "$1" =~ ^[0-9]+\.[0-9]+(\.[0-9]+[a-zA-Z]*){0,1}$ ]] && err "Version ($HPX_VERSION) must match format ^[0-9]+\.[0-9]+(\.[0-9]+[a-zA-Z]*){0,1}$"
 }
 
 validate_stackname() {
@@ -325,6 +329,14 @@ validate_redshift_user() {
 validate_ipv4_cidr() {
   [[ ! "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?$ ]] && \
   err "Invalid CIDR ($1)"
+}
+
+write_defaults() {
+  for envvar in PREFIX HPX_ROOT REDSHIFT_USER REDSHIFT_PASSWORD VPC_CIDR WHITELIST_CIDR; do
+    if [ -z "$(grep "^$envvar=" "$HPX_CFG")" ]; then
+      printf "\n$envvar=\"${!envvar}\"" >> "$HPX_CFG"
+    fi
+  done
 }
 
 info() {
