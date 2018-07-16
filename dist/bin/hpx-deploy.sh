@@ -242,7 +242,7 @@ status() {
 
       local cloudfront_id="$(aws cloudformation describe-stack-resources --stack-name $STACKNAME --output text  | awk '{if ($2 == "PixelServerCloudfrontDistribution") print $3;}')"
       local cloudfront_host="$(aws cloudfront get-distribution --id $cloudfront_id --output text | awk '{if ($1 == "DISTRIBUTION") print $3}')"
-      info "*** Your pixel url is http://$cloudfront_host/1x1.gif?a=value1&b=value2&c=value3&value4"
+      info "*** Your pixel url is http://$cloudfront_host/1x1.gif?a=value1&b=value2&c=value3&d=value4"
       ;;
     CREATE_IN_PROGRESS|UPDATE_IN_PROGRESS|UPDATE_COMPLETE_CLEANUP_IN_PROGRESS)
       info "Stack creation/update still in progress."
