@@ -106,7 +106,7 @@ pip install awscli
 
 ```
 
-If you don't fall into these categories check out Amazon's (install guide)[https://docs.aws.amazon.com/cli/latest/userguide/installing.html)
+If you don't fall into these categories check out Amazon's [install guide](https://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 
 ### Setup AWS Credentials
 
@@ -120,7 +120,7 @@ set of privileges.  Each of the services will get a restricted set of roles that
 For region us-west-2 got the most testing, but if you run into problems with the others ones
 open an issue, or conversely drop us a line if you had success with a region.
 
-### Test
+### Testing your AWSCLI setup
 
 This is a simple command that should tell you if you set up everything correctly.  It will not check
 if you have the necessary privileges to start the stack.
