@@ -40,14 +40,14 @@ For information on how to customize your HPX stack, run:
 ## Design
 
 The stack that created has a S3 backed CloudFront as the pixel server.  We played around with
-using lambda edge on CloudFront as the pixel server, but it using S3 was _much_ more stable
+using lambda edge on CloudFront as the pixel server, but using S3 was _much_ more stable
 under load.  CloudFront is configured to dump its logs into a S3 bucket.  This will trigger a
 lambda script that will parse the logs and send it to Kinesis Firehose.  Kinesis Firehose then
-imports the data into Redshift.
+loads the data into Redshift.
 
 If you want to further customize your stack or curious about how it all works, let's first 
 take a quick tour of the directory structure. `src` is where the Lambda scripts live.  This includes
-the one mentioned above that is used for data processing, as well as the ones that are
+the one mentioned above that processes the log data, as well as the ones that are
 used directly by CloudFormation to set up or configure the service.
 
 `dist` contains the files that will be pushed into S3.  This includes the packaged lambdas, and s3 origin
@@ -122,7 +122,7 @@ open an issue, or conversely drop us a line if you had success with a region.
 
 ### Testing your AWSCLI setup
 
-This is a simple command that should tell you if you set up everything correctly.  It will not check
+This is a simple command that should tell you if you set up AWS-CLI correctly.  It will not check
 if you have the necessary privileges to start the stack.
 
 ```bash
