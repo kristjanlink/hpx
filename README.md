@@ -39,7 +39,7 @@ For information on how to customize your HPX stack, run:
 
 ## Design
 
-The stack that created has a S3 backed CloudFront as the pixel server.  We played around with
+The stack has a S3 backed CloudFront as the pixel server.  We played around with
 using lambda edge on CloudFront as the pixel server, but using S3 was _much_ more stable
 under load.  CloudFront is configured to dump its logs into a S3 bucket.  This will trigger a
 lambda script that will parse the logs and send it to Kinesis Firehose.  Kinesis Firehose then
