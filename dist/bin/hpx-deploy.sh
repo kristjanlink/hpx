@@ -146,6 +146,9 @@ main() {
   STACKNAME="${STACKNAME:-"$PREFIX-$REGION"}"
   validate_stackname "$STACKNAME"
 
+  HPX_VERSION="${HPX_VERSION:-"$(latest_version)"}"
+  validate_version "$HPX_VERSION"
+
   case "$SUBCOMMAND" in
     deploy)
       deploy
@@ -159,9 +162,6 @@ main() {
 }
 
 deploy() {
-  HPX_VERSION="${HPX_VERSION:-"$(latest_version)"}"
-  validate_version "$HPX_VERSION"
-
   validate_s3uri "$HPX_ROOT/$HPX_VERSION"
   DISTS3BUCKET="${HPX_ROOT:5}"
   DISTS3KEY="$HPX_VERSION"
