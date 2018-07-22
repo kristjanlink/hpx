@@ -146,6 +146,9 @@ main() {
   STACKNAME="${STACKNAME:-"$PREFIX-$REGION"}"
   validate_stackname "$STACKNAME"
 
+  HPX_VERSION="${HPX_VERSION:-"$(latest_version)"}"
+  validate_version "$HPX_VERSION"
+
   case "$SUBCOMMAND" in
     deploy)
       deploy
@@ -159,9 +162,6 @@ main() {
 }
 
 deploy() {
-  HPX_VERSION="${HPX_VERSION:-"$(latest_version)"}"
-  validate_version "$HPX_VERSION"
-
   validate_s3uri "$HPX_ROOT/$HPX_VERSION"
   DISTS3BUCKET="${HPX_ROOT:5}"
   DISTS3KEY="$HPX_VERSION"
@@ -196,6 +196,7 @@ deploy() {
 
   if ! aws cloudformation describe-stacks --stack-name "$STACKNAME" > /dev/null 2>&1; then
     info "Creating new stack: $STACKNAME"
+    pixel "hpx-deploy.create"
     dryrun aws cloudformation create-stack \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
@@ -206,6 +207,7 @@ deploy() {
     Run \"$SCRIPTNAME --status\" to check on the status of your stack, "
   else
     info "Creating changeset for existing stack: $STACKNAME"
+    pixel "hpx-deploy.update"
     CHANGESET="$PREFIX-changeset-$LUSER-$REGION"
     dryrun aws cloudformation create-change-set \
       --capabilities CAPABILITY_NAMED_IAM \
@@ -229,7 +231,9 @@ deploy() {
 }
 
 status() {
+  pixel "hpx-deploy.checkstatus"
   local status="$(aws cloudformation describe-stacks --stack-name $STACKNAME --output text  | awk 'FNR == 1 {print $7;}')"
+  pixel "hpx-deploy.aws.$status"
 
   case "$status" in
     CREATE_COMPLETE|UPDATE_COMPLETE)
@@ -368,6 +372,20 @@ dryrun() {
   else
     eval "$@"
   fi
+}
+
+pixel() {
+  local subcommand="$1"
+  local requestid="$(uuidgen 2>/dev/null || true)"
+
+  if [ -z "${HPX_COOKIE:-}" ]; then
+    HPX_COOKIE="$(uuidgen 2>/dev/null || true)"
+    printf "HPX_COOKIE=\"$HPX_COOKIE\"\n" >> "$HPX_CFG" 2>/dev/null || true
+  fi
+
+  local pixurl=$(printf "http://d3heinlctv8z2v.cloudfront.net/1x1.gif?a=%s&b=%s&c=%s&d=%s" $subcommand $HPX_VERSION $HPX_COOKIE $requestid) 2>/dev/null || true
+  local out=$(curl -qfse 'http://github.com/Bright-Labs/hpx' --url "$pixurl" 2>/dev/null || true)
+  #echo "$out"
 }
 
 main "$@" || exit 1
