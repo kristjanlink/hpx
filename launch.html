@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Launch Pixel</title>
+<style>
+input:invalid + span:after {
+    content: '✖';
+    color: #f00;
+    padding-left: 5px;
+}
+
+input:valid + span:after {
+    content: '✓';
+    color: #26b72b;
+    padding-left: 5px;
+}
+</style>
+</head>
+
+
+<body>
+  This is a client side script, using Amazon's SDK.  None of your information (particularily keys and passwords)
+  are sent to us.
+
+  <form id="form">
+  <fieldset>
+    <div>
+      <label for="accessKey">AWS Access Key</label>
+      <input autofocus type="text" id="accessKey" name="accessKey" value="" required/>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="secretKey">AWS Secret Key</label>
+      <input type="text" id="secretKey" name="secretKey" value="" required/>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="version">HPX Version</label>
+      <input type="text" id="version" name="version" value="0.0.9" required/>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="prefix">Stack Prefix</label>
+      <input type="text" id="prefix" name="prefix" value="hpx" pattern="[a-zA-Z0-9]{1,16}" required>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="region">Region</label>
+      <input type="text" id="region" name="region" value="us-west-2" required readonly>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="username">Redshift username</label>
+      <input type="text" id="username" name="username" value="hpx" pattern="[a-z]{1}[a-z0-9]{0,127}" required>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="password">Redshift password (must be at least 8 chars, and contain at least one uppercase letter, one lowercase letter, and one number)</label>
+      <input type="text" id="password" name="password" placeholder="123456Aa" pattern="(?=\D*\d)(?=[^a-z]*[a-z])(?=[^A-Z]*[A-Z])[a-zA-Z0-9]{8,}" required>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="vpc">VPC Cidr Block</label>
+      <input type="text" id="vpc" name="vpc" value="172.31.0.0/16" pattern="([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?" required>
+      <span class="validity"></span>
+    </div>
+    <div>
+      <label for="whitelist">Whitelist IP Block (for access to the Redshift) (turn off adblock if you want to grab this automatically)</label>
+      <input type="text" id="whitelist" name="whitelist" pattern"([0-9]{1,3}\.){3}[0-9]{1,3}(\/([0-9]|[1-2][0-9]|3[0-2]))?">
+      <span class="validity"></span>
+    </div>
+    <button type="button" class="btn default" onClick="makeStack()">Create Stack</button>
+    <button type="button" class="btn default" onClick="checkStack()">Check Stack</button>
+  </fieldset>
+  </form>
+
+  <div id="status">
+  </div>
+
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.277.1.min.js"></script>
+    <script>
+      function getIP(json) {
+        document.getElementById("whitelist").value = json.ip + "/32";
+      }
+
+
+      function getValue(id) {
+        return document.getElementById(id).value;
+      }
+
+      function login() {
+        if (!document.getElementById("form").checkValidity()) {
+          updateStatus("Please fill out form.");
+          return false;
+        }
+        AWS.config.region = getValue("region");
+        AWS.config.credentials = {
+          accessKeyId: getValue("accessKey"),
+          secretAccessKey: getValue("secretKey")
+        };
+        return true;
+      }
+
+      function updateStatus(update) {
+        document.getElementById("status").innerHTML = update;
+      }
+
+      async function makeStack() {
+        if(!login()) {
+          return;
+        }
+        let params = {
+          StackName: `${getValue("prefix")}-${AWS.config.region}`,
+          Capabilities: [ 'CAPABILITY_NAMED_IAM' ],
+          TemplateURL: `https://s3-us-west-2.amazonaws.com/hpx-release-us-west-2/${getValue("version")}/cloudformation/hpx.yaml`,
+          Parameters: [
+            {
+              ParameterKey: "Prefix",
+              ParameterValue: getValue("prefix"),
+            },
+            {
+              ParameterKey: "DistS3Bucket",
+              ParameterValue: "hpx-release-us-west-2",
+            },
+            {
+              ParameterKey: "DistS3Key",
+              ParameterValue: getValue("version"),
+            },
+            {
+              ParameterKey: "RedshiftUser",
+              ParameterValue: getValue("username"),
+            },
+            {
+              ParameterKey: "RedshiftPassword",
+              ParameterValue: getValue("password"),
+            },
+            {
+              ParameterKey: "VpcCidrBlock",
+              ParameterValue: getValue("vpc"),
+            },
+            {
+              ParameterKey: "WhitelistCidr",
+              ParameterValue: getValue("whitelist"),
+            },
+          ],
+        }
+
+
+        const cloudformation = new AWS.CloudFormation();
+        updateStatus("Starting creation.  This will update when we hear back from AWS.");
+        try {
+          let response = await cloudformation.createStack(params).promise();
+          let stack_id = response.StackId;
+          updateStatus(`Stack ${stack_id} being created. Waiting for stack to come up (this takes awhile). This will update when it's done.`);
+          response = await cloudformation.waitFor("stackCreateComplete", {StackName: stack_id}).promise();
+          updateStatus("Stack Created!");
+          checkStack();
+        } catch(e) {
+          console.error(e);
+          console.dir(params);
+          updateStatus(`Got an error ${e}:<pre> ${JSON.stringify(e, null, 2)}</pre>`);
+        }
+
+      }
+
+      async function checkStack() {
+        if(!login()) {
+          return;
+        }
+        const params = {StackName: `${getValue("prefix")}-${AWS.config.region}`};
+        const cloudformation = new AWS.CloudFormation();
+        const Redshift = new AWS.Redshift();
+        const CloudFront = new AWS.CloudFront();
+        try {
+          const stacks = (await cloudformation.describeStacks(params).promise()).Stacks;
+          if (stacks[0].StackStatus == "CREATE_COMPLETE" || stacks[0].StackStatus == "UPDATE_COMPLETE") {
+            const resources = (await cloudformation.describeStackResources(params).promise()).StackResources;
+            const redshift_id = resources.find(e => e.LogicalResourceId === "HPXRedshiftCluster").PhysicalResourceId;
+            const redshift = await Redshift.describeClusters({ClusterIdentifier: redshift_id}).promise();
+            const cloudfront_id = resources.find(e => e.LogicalResourceId === "PixelServerCloudfrontDistribution").PhysicalResourceId;
+            const cloudfront = await CloudFront.getDistribution({Id: cloudfront_id}).promise();
+            const redshift_endpoint = `${redshift.Clusters[0].Endpoint.Address}:${redshift.Clusters[0].Endpoint.Port}`;
+            const pixel_url = `http://${cloudfront.Distribution.DomainName}//1x1.gif?a=value1&b=value2&c=value3&d=value4`;
+            updateStatus(`
+              <fieldset>
+              <div>
+              <label for="display_endpoint"> Redshift Endpoint </label>
+              <input readonly type="url" name="display_endpoint" size=${redshift_endpoint.length} value="${redshift_endpoint}"></input>
+              </div>
+              <div>
+              <label for="display_pixel">Pixel Url</label>
+              <input readonly type="url" name="display_pixel" size=${pixel_url.length} value="${pixel_url}"></input>
+              </div>
+              </fieldset>
+              `);
+          } else {
+            updateStatus(`Stack not ready: Got ${stacks[0].StackStatus} back from AWS.`);
+          }
+        } catch(e) {
+          console.error(e);
+          updateStatus(`Got an error ${e}:<pre> ${JSON.stringify(e, null, 2)}</pre>`);
+        }
+
+      }
+    </script>
+    <script type="application/javascript" src="https://api.ipify.org?format=jsonp&callback=getIP"></script>
+</body>
+</html>
