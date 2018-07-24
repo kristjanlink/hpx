@@ -200,7 +200,7 @@ deploy() {
     dryrun aws cloudformation create-stack \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
-      --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
+      --template-url "$(REGION="us-west-2" s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)"  \
       --parameters "${PARAMETERS[@]}"
 
     info "Stack creation may take 20 minutes or longer. \
@@ -212,7 +212,7 @@ deploy() {
     dryrun aws cloudformation create-change-set \
       --capabilities CAPABILITY_NAMED_IAM \
       --stack-name "$STACKNAME" \
-      --template-url "$(s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
+      --template-url "$(REGION="us-west-2" s3uri_to_s3url $HPX_ROOT/$HPX_VERSION/cloudformation/hpx.yaml)" \
       --change-set-name "$CHANGESET" \
       --parameters "${PARAMETERS[@]}"
 
@@ -320,7 +320,7 @@ validate_s3uri() {
 }
 
 s3uri_to_s3url() {
-  local awsregion="${REGION:-$(aws configure get region)}"
+  local awsregion="$REGION"
   printf "https://s3-${awsregion}.amazonaws.com/${1:5}"
 }
 
