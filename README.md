@@ -14,7 +14,7 @@ Installing HPX using the [web UI](https://cdn.rawgit.com/Bright-Labs/hpx/ae1bf41
 Using HPX
 
 # Using HPX
-Once you spin up the service, HPX is extremely simple to use. Learn how to [track](https://github.com/Bright-Labs/hpx/wiki/Tracking-Data-via-HPX) and [access](https://github.com/Bright-Labs/hpx/wiki/Accessing-Your-Data) your data.
+Once you spin up the service, HPX is extremely simple to use. Learn how to [track](https://github.com/Bright-Labs/hpx/wiki/Tracking-Data-via-HPX) and [access](https://github.com/Bright-Labs/hpx/wiki/Accessing-Your-Data) your data. You can also [check out how we instrumented the HPX project](https://github.com/Bright-Labs/hpx/wiki/Example:-Running-a-hacker-pixel-in-a-Bash-script-(Dogfooding-HPX)) with a hacker pixel to get insights into usage.
 
 # Costs
 Running HPX uses Cloudformation, S3, Kinesis, Cloudfront, Lambda and Redshift services in your AWS account. You are responsible for any costs associated with using the service. You may estimate the costs using [Amazon’s cost calculator](http://calculator.s3.amazonaws.com/index.html?key=cloudformation/aab57d78-a09f-4deb-8619-c3c29b279313).
