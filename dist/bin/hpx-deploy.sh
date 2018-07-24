@@ -87,6 +87,10 @@ main() {
 
   SUBCOMMAND="deploy"
 
+  HPX_CFG="${HPX_CFG:-"$HOME/.hpx/default"}"
+  validate_hpx_cfg "$HPX_CFG"
+  source "$HPX_CFG"
+
   while [[ $# > 0 ]]; do
     case "$1" in
       -S|--stack)
@@ -135,10 +139,6 @@ main() {
         shift
     esac
   done
-
-  HPX_CFG="${HPX_CFG:-"$HOME/.hpx/default"}"
-  validate_hpx_cfg "$HPX_CFG"
-  source "$HPX_CFG"
 
   PREFIX="${PREFIX:-"hpx"}"
   validate_prefix "$PREFIX"

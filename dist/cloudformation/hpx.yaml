@@ -250,7 +250,7 @@ Resources:
                 PriceClass: "PriceClass_All"
                 DefaultCacheBehavior:
                     TargetOriginId: !Ref PixelServerS3Bucket
-                    ViewerProtocolPolicy: "redirect-to-https"
+                    ViewerProtocolPolicy: "allow-all"
                     MinTTL: 0
                     AllowedMethods:
                         - "HEAD"
