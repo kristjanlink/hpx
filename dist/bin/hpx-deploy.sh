@@ -171,7 +171,7 @@ deploy() {
 
   if [ -z "${REDSHIFT_PASSWORD:-}" ]; then
     REDSHIFT_PASSWORD="$( create_redshift_password )"
-    printf "REDSHIFT_PASSWORD=\"$REDSHIFT_PASSWORD\"\n" >> "$HPX_CFG"
+    printf "\nREDSHIFT_PASSWORD=\"$REDSHIFT_PASSWORD\"\n" >> "$HPX_CFG"
   else
     validate_redshift_password "$REDSHIFT_PASSWORD"
   fi
@@ -380,7 +380,7 @@ pixel() {
 
   if [ -z "${HPX_COOKIE:-}" ]; then
     HPX_COOKIE="$(uuidgen 2>/dev/null || true)"
-    printf "HPX_COOKIE=\"$HPX_COOKIE\"\n" >> "$HPX_CFG" 2>/dev/null || true
+    printf "\nHPX_COOKIE=\"$HPX_COOKIE\"\n" >> "$HPX_CFG" 2>/dev/null || true
   fi
 
   local pixurl=$(printf "http://d3heinlctv8z2v.cloudfront.net/1x1.gif?a=%s&b=%s&c=%s&d=%s" $subcommand $HPX_VERSION $HPX_COOKIE $requestid) 2>/dev/null || true
