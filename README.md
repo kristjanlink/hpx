@@ -1,5 +1,4 @@
-# Hacker Pixel (HPX)
-The Hacker Pixel is a simple, open source, application data platform that makes it easy for teams to measure what matters in as little as a single line of code. Track application parameters instantly without data engineering or prioritization discussions. 
+The Hacker Pixel (HPX) is a simple, open source, application data platform that makes it easy for teams to measure what matters in as little as a single line of code. Track application parameters instantly without data engineering or prioritization discussions. 
 
 This repo contains scripts that will quickly spin up a simple data pipeline in AWS. It will set up Cloudfront, Kinesis and Redshift to allow your users to hit a pixel that will record their IP, User-agent and 4 custom parameters. 
 
