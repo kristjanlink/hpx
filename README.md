@@ -13,6 +13,7 @@ If you prefer to use the command line, grab the [latest release](https://github.
 Installing HPX using the [web UI](https://cdn.rawgit.com/Bright-Labs/hpx/ae1bf418/launch.html) does not require any downloads. You must provide information related to your AWS account (e.g., keys, passwords), but none of the data is sent to us (the page uses Amazon’s client-side SDK). If you are not comfortable inputting this data in a web browser, we recommend you use the command line option.
 Using HPX
 
+# Using HPX
 Once you spin up the service, HPX is extremely simple to use. Learn how to [track](https://github.com/Bright-Labs/hpx/wiki/Tracking-Data-via-HPX) and [access](https://github.com/Bright-Labs/hpx/wiki/Accessing-Your-Data) your data.
 
 # Costs
