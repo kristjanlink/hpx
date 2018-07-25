@@ -24,4 +24,4 @@ Running HPX uses Cloudformation, S3, Kinesis, Cloudfront, Lambda and Redshift se
 * [Advanced Configuration Options](https://github.com/Bright-Labs/hpx/wiki/Advanced-Configuration-Options)
 * [Deleting the HPX Stack from AWS](https://github.com/Bright-Labs/hpx/wiki/Deleting-the-HPX-Stack)
 
-![](http://due51c15d7bfn.cloudfront.net//1x1.gif)
+![](https://due51c15d7bfn.cloudfront.net//1x1.gif)
