@@ -65,7 +65,7 @@ main() {
   validate_hpx_cfg "$HPX_CFG"
   source "$HPX_CFG"
 
-  while [[ $# > 0 ]]; do
+  while [[ $# -gt 0 ]]; do
     case "$1" in
       -V|--version)
         HPX_VERSION="${2:-}"
@@ -75,7 +75,7 @@ main() {
         ;;
       -R|--root)
         HPX_ROOT="${2:-}"
-        [ -z HPX_ROOT ] && err "(--root) Root S3URI expected!"
+        [ -z "$HPX_ROOT" ] && err "(--root) Root S3URI expected!"
         HPX_OPTIONS+=("$1" "$2")
         shift 2
         ;;
@@ -158,7 +158,7 @@ validate_hpx_cfg() {
 
 validate_s3uri() {
   [[ ! "$1" =~ ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$ ]] && err "Invalid S3URI ($1). S3URI must match ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$"
-  ! aws s3 ls "$1" 2>&1 >/dev/null && err "Cannot access S3URI ($1)"
+  ! aws s3 ls "$1" >/dev/null 2>&1 && err "Cannot access S3URI ($1)"
 }
 
 validate_version() {

@@ -91,7 +91,7 @@ main() {
   validate_hpx_cfg "$HPX_CFG"
   source "$HPX_CFG"
 
-  while [[ $# > 0 ]]; do
+  while [[ $# -gt 0 ]]; do
     case "$1" in
       -S|--stack)
         STACKNAME="${2:-}"
@@ -294,7 +294,7 @@ create_redshift_password() {
 
 latest_version() {
   local latest="$(aws s3 cp "$HPX_ROOT/LATEST" - 2> /dev/null)"
-  [ -z latest ] && err "Could not find latest version! Check your internet connection."
+  [ -z "$latest" ] && err "Could not find latest version! Check your internet connection."
   printf "$latest"
 }
 
@@ -316,7 +316,7 @@ validate_stackname() {
 
 validate_s3uri() {
   [[ ! "$1" =~ ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$ ]] && err "Invalid S3URI ($1). S3URI must match ^s3://[a-zA-Z0-9.\-_]{1,255}/?.*$"
-  ! aws s3 ls "$1" 2>&1 >/dev/null && err "Cannot access S3URI ($1)"
+  ! aws s3 ls "$1" >/dev/null 2>&1 && err "Cannot access S3URI ($1)"
 }
 
 s3uri_to_s3url() {
